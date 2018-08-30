@@ -1,0 +1,23 @@
+tw bot user: XD_BOT_XD
+email: @gmail
+
+oauth:qfo55414g1bnak5x0x40merhmm42yb
+
+nickname: xd_bot_xd
+server: irc.hat.twitch.tv
+port: 6667
+
+
+commands:
+    !commands
+    !game
+    !title
+    !brainpower
+    !brna
+    !cubepb
+    !kms
+    !lydia
+    !opgg
+    !riven
+    !uptime
+    !xd
