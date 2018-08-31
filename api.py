@@ -1,10 +1,17 @@
 # This module is in charge of making API calls
 
 # TO-DO: refresh token checker
+# fix auth
 
 import cfg
 import requests
 import arrow
+
+def get_new_token():
+    #only run when token expires
+    url = 'https://id.twitch.tv/oauth2/token?client_id={}&client_secret={}&grant_type=client_credentials&scope={}'.format(cfg.CLIENT_ID, cfg.secret, cfg.SCOPES)
+    r = requests.post(url=url)
+    print(r.json())
 
 
 def get_uptime() -> str:
@@ -50,7 +57,7 @@ def set_title(title):
     requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
     return
 
-def get_viewers():
+def get_viewers() -> [str]:
     url = r'https://tmi.twitch.tv/group/user/hwangbroxd/chatters'
     r = requests.get(url).json()
     return r['chatters']['viewers']

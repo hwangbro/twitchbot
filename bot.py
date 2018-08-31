@@ -2,15 +2,17 @@
 
 import cfg
 import socket
-from time import sleep
-import re
-import requests
-from admin_commands import admin_commands, admin_commands_2
+# from admin_commands import admin_commands, admin_commands_2
 import api
 import commands
 import db
-import time
+import points
+
+from time import sleep, time
 import importlib
+import re
+import requests
+from multiprocessing import Process
 
 
 def chat(sock, msg):
@@ -19,8 +21,8 @@ def chat(sock, msg):
     :param sock: socket
     :param msg: string to be sent as message
     """
-
     sock.send("PRIVMSG {} :{}\r\n".format(cfg.CHAN, msg).encode("utf-8"))
+    sleep(1 / cfg.RATE)
 
 
 # def ban(sock, user):
@@ -42,7 +44,7 @@ def handle_command(sock, response) -> None:
     #admin_command_msg = re.match(r'^!([a-zA-Z0-9]*) ([\w \!]*)$', message.strip())
     admin_command_msg = re.match(r'^!([a-zA-Z0-9]*) (.*)$', message.strip())
     meta_command_msg = re.match(r'^!([a-zA-Z0-9]*) !([\w]*)\s?(.*)$', message.strip())
-    print(username + ': ' + message)
+    # print(username + ': ' + message)
     if command_msg is not None:
         command = command_msg.group(1)
         if command in commands.commands_list:
@@ -62,10 +64,15 @@ def handle_command(sock, response) -> None:
         if msg is not None:
             chat(sock, msg)
 
+
 def update_points():
-    viewers = api.get_viewers()
-    for v in viewers:
-        db.update_viewer(v)
+    oldtime = time()
+    while True:
+        new = time()
+        if new-oldtime > 60:
+            oldtime = new
+            points.update_viewers(api.get_viewers())
+
 
 def main():
     s = socket.socket()
@@ -73,21 +80,16 @@ def main():
     s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
     s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
     s.send("JOIN {}\r\n".format(cfg.CHAN).encode("utf-8"))
-    import time
 
-    t = time.time()
+    p = Process(target=update_points)
+    p.start()
+
     while True:
-        new_time = time.time()
-        if new_time - t > 30:
-            print('update')
-            t = new_time
-            update_points()
         response = s.recv(1024).decode("utf-8")
         if response == "PING :tmi.twitch.tv\r\n":
             s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
         else:
-            handle_command(s, response)
-        sleep(1 / cfg.RATE)
+            commands.handle_command(s, response)
 
 
 def test():

@@ -6,8 +6,8 @@ c = db.cursor()
 #c.execute('CREATE TABLE viewer_points (ID INT PRIMARY KEY, USERNAME TEXT, POINTS INT);')
 #c.execute("INSERT INTO viewer_points (ID, USERNAME, POINTS) VALUES (1, 'hwangbroXD', 0)")
 cursor = c.execute("SELECT * FROM viewer_points")
-for row in cursor:
-    print(row)
+# for row in cursor:
+#     print(row)
 
 def update_viewer(username):
     db = sqlite3.connect('twitchbot.db')
@@ -22,6 +22,7 @@ def update_viewer(username):
     else:
         c.execute('''INSERT INTO viewer_points (USERNAME, POINTS) VALUES ("{}", 0)'''.format(username.lower()))
         db.commit()
+
 
 def get_points(username):
     db = sqlite3.connect('twitchbot.db')
@@ -47,5 +48,5 @@ def set_points(username, points):
     else:
         c.execute('''INSERT INTO viewer_points (USERNAME, POINTS) VALUES ("{}", {})'''.format(username.lower(), points))
         db.commit()
-update_viewer('hwangbroxd')
-print(get_points('hwangbroxd'))
+# update_viewer('hwangbroxd')
+# print(get_points('hwangbroxd'))

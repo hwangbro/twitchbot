@@ -9,5 +9,4 @@ admin_commands = {
 
 admin_commands_2 = {
     'setpoints': db.set_points,
-
 }
