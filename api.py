@@ -1,25 +1,26 @@
 # This module is in charge of making API calls
 
 # TO-DO: refresh token checker
-# fix auth
+# work toward helix
 
 import cfg
 import requests
 import arrow
+from time import sleep
 
 def get_new_token():
-    #only run when token expires
-    url = 'https://id.twitch.tv/oauth2/token?client_id={}&client_secret={}&grant_type=client_credentials&scope={}'.format(cfg.CLIENT_ID, cfg.secret, cfg.SCOPES)
-    r = requests.post(url=url)
-    print(r.json())
+    # only run when token expires
+    # OAuth Implicit Code Flow (on api site)
+    # visit the url here for token
+    auth = f'https://id.twitch.tv/oauth2/authorize?client_id={cfg.CLIENT_ID}&redirect_uri=https://twitchapps.com/tokengen/&response_type=token&scope={cfg.SCOPES}'
 
 
 def get_uptime() -> str:
     url = f'https://api.twitch.tv/kraken/streams/{cfg.CHANNEL_ID}'
-    #url = f'https://api.twitch.tv/helix/streams/{cfg.CHANNEL_ID}' to do
     r = requests.get(url, headers=cfg.HEADERS).json()
+    sleep(0.5)
     if r['stream'] is None:
-        return 'hwangbroXD is not live! '
+        return 'hwangbroXD is not live!'
     start_time = arrow.get(r['stream']['created_at'])
     duration = (arrow.now() - start_time).seconds
     min, sec = divmod(duration, 60)
@@ -29,38 +30,44 @@ def get_uptime() -> str:
 
 def get_game() -> str:
     r = requests.get(cfg.URL, headers=cfg.HEADERS).json()
-    return r['game']
+    sleep(0.5)
+    return 'Current Game: ' + r['game']
 
 
 def get_title() -> str:
     r = requests.get(cfg.URL, headers=cfg.HEADERS).json()
-    return r['status']
+    sleep(0.5)
+    return 'Current Stream Title: ' + r['status']
 
 
 def get_pro_mods() -> str:
     return f'The users who can use the admin bot commands are ' + ', '.join(cfg.ADMIN)
 
 
-def set_game(game):
+def set_game(game: str) -> str:
     if game.lower() == 'none':
         data = {'channel': {'game': ''}}
     else:
         data = {'channel': {'game': game}}
     requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
+    sleep(0.5)
     return f'The stream game has been updated to {game}'
 
 
-def set_title(title):
+def set_title(title: str) -> str:
     if len(title) > 140:
         return f'The stream title is too long and could not be set.'
     data = {'channel': {'status': title}}
     requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
+    sleep(0.5)
     return
+
 
 def get_viewers() -> [str]:
     url = r'https://tmi.twitch.tv/group/user/hwangbroxd/chatters'
     r = requests.get(url).json()
-    return r['chatters']['viewers']
+    sleep(0.5)
+    return r['chatters']['viewers'] + r['chatters']['moderators']
 
 
 def test():
@@ -90,4 +97,4 @@ def test():
     #print(r7)
     get_viewers()
 
-test()
+# get_new_token()

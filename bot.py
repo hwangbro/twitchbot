@@ -2,10 +2,8 @@
 
 import cfg
 import socket
-# from admin_commands import admin_commands, admin_commands_2
 import api
 import commands
-import db
 import points
 
 from time import sleep, time
@@ -22,47 +20,17 @@ def chat(sock, msg):
     :param msg: string to be sent as message
     """
     sock.send("PRIVMSG {} :{}\r\n".format(cfg.CHAN, msg).encode("utf-8"))
-    sleep(1 / cfg.RATE)
 
 
-# def ban(sock, user):
-#     chat(sock, ".ban {}".format(user))
-#
-#
-# def timeout(sock, user, secs=600):
-#     """
-#     Time out a user for set period of time
-#     """
-#     chat(sock, ".timeout {}".format(user, secs))
+def ban(sock, user):
+    chat(sock, ".ban {}".format(user))
 
 
-def handle_command(sock, response) -> None:
-    # importlib.reload(commands) refactor this
-    username = re.search(r"\w+", response).group(0)
-    message = cfg.CHAT_MSG.sub("", response)
-    command_msg = re.match(r'^!([a-zA-Z0-9]*)$', message.strip().lower())
-    #admin_command_msg = re.match(r'^!([a-zA-Z0-9]*) ([\w \!]*)$', message.strip())
-    admin_command_msg = re.match(r'^!([a-zA-Z0-9]*) (.*)$', message.strip())
-    meta_command_msg = re.match(r'^!([a-zA-Z0-9]*) !([\w]*)\s?(.*)$', message.strip())
-    # print(username + ': ' + message)
-    if command_msg is not None:
-        command = command_msg.group(1)
-        if command in commands.commands_list:
-            chat(sock, commands.commands_list[command])
-            return
-        elif command in commands.commands_meta:
-            chat(sock, commands.commands_meta[command])
-            return
-        elif command == 'points':
-            chat(sock, db.get_points(username))
-            return
-    elif admin_command_msg is not None and admin_command_msg.group(1) in admin_commands and username.strip() in cfg.ADMIN:
-        #print(admin_command_msg, admin_command_msg.group(1), admin_command_msg.group(2))
-        chat(sock, admin_commands[admin_command_msg.group(1)](admin_command_msg.group(2)))
-    elif meta_command_msg is not None and username.strip() in cfg.ADMIN:
-        msg = commands.handle_meta_command(meta_command_msg.group(1), meta_command_msg.group(2), meta_command_msg.group(3))
-        if msg is not None:
-            chat(sock, msg)
+def timeout(sock, user, secs=600):
+    """
+    Time out a user for set period of time
+    """
+    chat(sock, ".timeout {}".format(user, secs))
 
 
 def update_points():
