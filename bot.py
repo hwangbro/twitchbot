@@ -34,12 +34,9 @@ def timeout(sock, user, secs=600):
 
 
 def update_points():
-    oldtime = time()
     while True:
-        new = time()
-        if new-oldtime > 60:
-            oldtime = new
-            points.update_viewers(api.get_viewers())
+        sleep(60)
+        points.update_viewers(api.get_viewers())
 
 
 def main():
@@ -57,7 +54,10 @@ def main():
         if response == "PING :tmi.twitch.tv\r\n":
             s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
         else:
-            commands.handle_command(s, response)
+            if "PokPikachu" in response and "monipooh" in response:
+                chat(s, "Pikachu LUL")
+            else:
+                commands.handle_command(s, response)
 
 
 def test():

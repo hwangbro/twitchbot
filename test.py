@@ -8,7 +8,13 @@
 # 4) admin commands (with or without arguments)
 asdf = "asjdfkl;a"
 test_str = r":hwangbroxd!hwangbroxd@hwangbroxd.tmi.twitch.tv PRIVMSG #hwangbroxd :!lfjdk"
-from pyparsing import Word, alphas, alphanums, restOfLine, Suppress, Optional
+
+from pyparsing import Word, alphas, alphanums, restOfLine, Suppress, Optional, Combine
+parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Word("!"+alphanums)).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
+
+test = "help 4"
+name, points = test.split()
+print(name, points)
 def parsetest():
 	command = "!" + Word(alphas).setResultsName("command") + restOfLine.setResultsName("arg")
 	message = "#" + Word(alphanums + "_").setResultsName("username") + ":!" + Word(alphas).setResultsName("cmd") + restOfLine.setResultsName("msg")
@@ -52,5 +58,5 @@ r2 = requests.get(url=URL, headers=cfg.HEADERS)
 
 # r = requests.get(url=auth, headers={'Accept': 'application/vnd.twitchtv.v5+json'})
 import random
-print(random.randint(1, 100))
+# print(random.randint(1, 100))
 # print(test['b'])

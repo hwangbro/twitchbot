@@ -21,26 +21,67 @@ def update_viewers(usernames: [str]):
 	write_points(pts)
 
 
-def set_points(user, points):
+def set_points(msg: str) -> str:
+	message = msg.split()
+	if len(message) != 2:
+		return "Incorrect format."
+	try:
+		user, pts2 = message
+		points = int(pts2)
+	except:
+		return "Incorrect format."
 	pts = read_points()
 	pts[user] = points
 	write_points(pts)
+	return f"{user} now has {pts2} points"
 
 
-def add_points(user, points):
+def add_points(msg: str) -> str:
+	message = msg.split()
+	if len(message) != 2:
+		return "Incorrect format."
+	try:
+		user, pts2 = message
+		points = int(pts2)
+	except:
+		return "Incorrect format."
 	pts = read_points()
 	if user in pts:
 		pts[user] += points
 	else:
 		pts[user] = points
 	write_points(pts)
+	return f"You have added {pts2} points to {user}"
 
-
-def get_points(user):
+def sub_points(msg: str) -> str:
+	message = msg.split()
+	if len(message) != 2:
+		return "Incorrect format."
+	try:
+		user, pts2 = message
+		points = int(pts2) * -1
+	except:
+		return "Incorrect format."
 	pts = read_points()
 	if user in pts:
-		return pts[user]
-	return 0
+		pts[user] += points
+	else:
+		pts[user] = points
+	write_points(pts)
+	return f"You have subtracted {pts2} points from {user}"
+
+
+def get_points(user, user2) -> str:
+	pts = read_points()
+	if user2:
+		if len(user2.split()) > 1:
+			return "Incorrect username format, please try again nerd."
+		if user2 not in pts:
+			return user2 + " has no points."
+		return "The loser " + user2 + " currently has " + str(pts[user2]) + " points."
+	elif user in pts:
+		return "You currently have " + str(pts[user]) + " points."
+	return "Error."
 
 
 def gamble(username, wager):

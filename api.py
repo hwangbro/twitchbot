@@ -60,7 +60,7 @@ def set_title(title: str) -> str:
     data = {'channel': {'status': title}}
     requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
     sleep(0.5)
-    return
+    return f"The stream title has been set to " + title
 
 
 def get_viewers() -> [str]:

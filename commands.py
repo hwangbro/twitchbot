@@ -2,7 +2,7 @@
 
 import api
 import points
-from pyparsing import Word, alphas, alphanums, restOfLine, Optional
+from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 from bot import chat
 import cfg
 import json
@@ -24,9 +24,12 @@ meta_commands = ['remove', 'add', 'edit']
 admin_commands = {
     'setgame': api.set_game,
     'settitle': api.set_title,
+    'addpoints': points.add_points,
+    'subpoints': points.sub_points,
+    'setpoints': points.set_points,
 }
 
-parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Word("!"+alphanums)).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
+parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Combine("!" + Word(alphanums))).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
 
 def load_commands():
     with open('commands.json', 'r') as f:
@@ -90,7 +93,7 @@ def handle_command(sock, response) -> None:
         elif cmd == 'commands':
             chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(commands_list.keys()) + list(commands_func_list.keys()))]))
         elif cmd == 'points':
-            chat(sock, "You currently have " + str(points.get_points(username)) + " points.")
+            chat(sock, points.get_points(username.lower(), msg.lower()))
         elif cmd == 'gamble' and msg.isdigit():
             pass
         elif cmd in admin_commands and username in cfg.ADMIN:
