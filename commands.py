@@ -95,7 +95,7 @@ def handle_command(sock, response) -> None:
         elif cmd == 'points':
             chat(sock, points.get_points(username.lower(), msg.lower()))
         elif cmd == 'gamble' and msg.isdigit():
-            pass
+            chat(sock, points.gamble(username.lower(), int(msg)))
         elif cmd in admin_commands and username in cfg.ADMIN:
             chat(sock, admin_commands[cmd](msg))
         elif cmd in meta_commands and new_cmd:

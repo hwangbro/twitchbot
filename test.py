@@ -14,7 +14,7 @@ parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"
 
 test = "help 4"
 name, points = test.split()
-print(name, points)
+
 def parsetest():
 	command = "!" + Word(alphas).setResultsName("command") + restOfLine.setResultsName("arg")
 	message = "#" + Word(alphanums + "_").setResultsName("username") + ":!" + Word(alphas).setResultsName("cmd") + restOfLine.setResultsName("msg")
@@ -41,6 +41,7 @@ data = {'channel': {'game': 'League of Legends'}}
 r = requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
 #print(r.json())
 
+print(api.get_viewers())
 
 def set_game(game):
     if game.lower() == 'none':

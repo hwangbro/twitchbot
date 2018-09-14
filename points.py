@@ -83,12 +83,20 @@ def get_points(user, user2) -> str:
 		return "You currently have " + str(pts[user]) + " points."
 	return "Error."
 
+def get_user_points(user):
+	pts = read_points()
+	if user in pts:
+		return pts[user]
+	return 0
 
 def gamble(username, wager):
-	points = get_points(user)
+	points = get_user_points(username)
+	roll = randint(1, 100)
 	if wager > points:
-		return
-	if randint(1, 100) > 50:
-		add_points(username, wager)
+		return "You don't have enough points to gamble."
+	if roll > 50:
+		add_points(username + " " + str(wager))
+		return f"You rolled a {str(roll)}! You've won {wager} points."
 	else:
-		pass #to do
+		sub_points(username + " " + str(wager))
+		return f"You rolled a {str(roll)}! You've lost {wager} points, loser."

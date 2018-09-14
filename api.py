@@ -65,9 +65,9 @@ def set_title(title: str) -> str:
 
 def get_viewers() -> [str]:
     url = r'https://tmi.twitch.tv/group/user/hwangbroxd/chatters'
-    r = requests.get(url).json()
+    names = requests.get(url).json()
     sleep(0.5)
-    return r['chatters']['viewers'] + r['chatters']['moderators']
+    return names['chatters']['viewers'] + names['chatters']['moderators']
 
 
 def test():

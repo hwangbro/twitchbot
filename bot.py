@@ -36,6 +36,7 @@ def timeout(sock, user, secs=600):
 def update_points():
     while True:
         sleep(60)
+        print("updating")
         points.update_viewers(api.get_viewers())
 
 
