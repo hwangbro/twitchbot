@@ -21,3 +21,8 @@ commands:
     !riven
     !uptime
     !xd
+
+
+peewee for sqlite
+try threading for auto points update
+	implement lock and sqlite for points
