@@ -1,4 +1,4 @@
-# General Commands for non-mod/non-admins go here
+# Command handling
 
 import api
 import points

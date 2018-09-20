@@ -1,5 +1,8 @@
-import sqlite3
+# Module to handle database read writes.
+
 from peewee import *
+import arrow
+from random import randint
 
 db = SqliteDatabase('twitchpoints.db')
 
@@ -10,9 +13,10 @@ class BaseModel(Model):
 class Points(BaseModel):
     name = CharField(unique = True)
     points = IntegerField()
+    modified = DateTimeField()
 
 def update_viewers(usernames: [str]):
-    empty_users = [{'name': user, 'points': 0} for user in usernames]
+    empty_users = [{'name': user, 'points': 0, 'modified': arrow.now().format()} for user in usernames]
     Points.insert_many(empty_users).on_conflict(action='IGNORE').execute()
     query = Points.update(points = Points.points + 1).where(Points.name in usernames)
     query.execute()
@@ -30,7 +34,6 @@ def parse_points_command(msg) -> (str,int):
 
 
 def handle_point_command(cmd, msg):
-    # needs to know if its add, set, or subtract
     name, pts = parse_points_command(msg)
     if cmd == 'addpoints':
         increment_points(name, pts, '+')
@@ -46,32 +49,62 @@ def handle_point_command(cmd, msg):
 def set_points(name, pts) -> str:
     query = Points.update(points = pts).where(Points.name == name).execute()
 
+
 def increment_points(name, pts, type='+') -> str:
-    empty = Points.insert([{'name': name, 'points': 0}]).on_conflict(action='IGNORE').execute()
+    empty = Points.insert([{'name': name, 'points': 0, 'modified': arrow.now().format()}]).on_conflict(action='IGNORE').execute()
     if type == '+':
-        query = Points.update(points = Points.points + pts).where(Points.name == name)
+        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name)
     elif type == '-':
-        query = Points.update(points = Points.points - pts).where(Points.name == name)
+        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name)
     query.execute()
+
+
+def gamble(username, wager):
+    user = Points.get(Points.name == username)
+    points = user.points
+    delta = (arrow.now() - arrow.get(user.modified)).seconds
+    if (delta < 5):
+        print("not enough time passed")
+        return ""
+    if wager < 0:
+        print("can't bet negative numbers")
+    roll = randint(1, 100)
+    if wager > points:
+        return "You don't have enough points to gamble."
+    if roll > 50:
+        increment_points(username, wager, "+")
+        print("you won")
+        # return f"You rolled a {str(roll)}! You've won {wager} points."
+    else:
+        increment_points(username, wager, "-")
+        print("you lost")
+        # return f"You rolled a {str(roll)}! You've lost {wager} points, loser."
+
 
 def create_table():
     db.create_tables([Points])
+
 
 def print_users():
     for user in Points.select():
         print(user.name, user.points)
 
+
 def delete_all():
     for user in Points.select():
         user.delete_instance()
 
+
 if __name__ == "__main__":
     db.connect()
+    #create_table()
     print_users()
-    update_viewers(['hwangbroxd', 'gay_zach'])
+    # update_viewers(['hwangbroxd', 'asdf'])
     # create_table()
     # delete_all()
-    set_points('hwangbroxd', 25)
+    # set_points('hwangbroxd', 25)
+    gamble('hwangbroxd', 5)
+    # handle_point_command("setpoints", "hwangbroxd 15")
     print_users()
 
 
