@@ -6,6 +6,7 @@ from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 from bot import chat
 import cfg
 import json
+import db
 
 # To add, remove, or edit commands, the admin can type
 # !add !command text here
@@ -24,10 +25,13 @@ meta_commands = ['remove', 'add', 'edit']
 admin_commands = {
     'setgame': api.set_game,
     'settitle': api.set_title,
-    'addpoints': points.add_points,
-    'subpoints': points.sub_points,
-    'setpoints': points.set_points,
+    # 'addpoints': points.add_points,
+    # 'subpoints': points.sub_points,
+    # 'setpoints': points.set_points,
 }
+
+point_commands = ['addpoints', 'subpoints', 'setpoints']
+
 
 parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Combine("!" + Word(alphanums))).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
 
@@ -96,6 +100,8 @@ def handle_command(sock, response) -> None:
             chat(sock, points.get_points(username.lower(), msg.lower()))
         elif cmd == 'gamble' and msg.isdigit():
             chat(sock, points.gamble(username.lower(), int(msg)))
+        elif cmd in points_commands and username in cfg.ADMIN:
+            chat(sock, db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:
             chat(sock, admin_commands[cmd](msg))
         elif cmd in meta_commands and new_cmd:

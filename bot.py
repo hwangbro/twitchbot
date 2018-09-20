@@ -11,7 +11,7 @@ import importlib
 import re
 import requests
 from multiprocessing import Process
-
+import threading
 
 def chat(sock, msg):
     """
@@ -47,8 +47,12 @@ def main():
     s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
     s.send("JOIN {}\r\n".format(cfg.CHAN).encode("utf-8"))
 
-    p = Process(target=update_points)
-    p.start()
+    points_thread = threading.Thread(target=update_points)
+    points_thread.daemon = True
+    points_thread.start()
+
+    # p = Process(target=update_points)
+    # p.start()
 
     while True:
         response = s.recv(1024).decode("utf-8")
