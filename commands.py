@@ -21,16 +21,12 @@ commands_func_list = {
 }
 
 meta_commands = ['remove', 'add', 'edit']
+point_commands = ['addpoints', 'subpoints', 'setpoints']
 
 admin_commands = {
     'setgame': api.set_game,
     'settitle': api.set_title,
-    # 'addpoints': points.add_points,
-    # 'subpoints': points.sub_points,
-    # 'setpoints': points.set_points,
 }
-
-point_commands = ['addpoints', 'subpoints', 'setpoints']
 
 
 parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Combine("!" + Word(alphanums))).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
@@ -38,7 +34,6 @@ parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"
 def load_commands():
     with open('commands.json', 'r') as f:
         return json.load(f)
-
 
 commands_list = load_commands()
 
@@ -78,7 +73,9 @@ def remove_command(name):
     return f'The command !{name} has been removed.'
 
 
-def parse_command(response):
+def parse_command(response) -> (str,):
+    '''Parse the response for potential command formats'''
+
     print(response, end='')
     tmp = list(parser.scanString(response))
     if not tmp:

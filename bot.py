@@ -7,10 +7,6 @@ import commands
 import points
 
 from time import sleep, time
-import importlib
-import re
-import requests
-from multiprocessing import Process
 import threading
 
 def chat(sock, msg):

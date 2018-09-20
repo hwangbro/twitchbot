@@ -15,6 +15,7 @@ class Points(BaseModel):
     points = IntegerField()
     modified = DateTimeField()
 
+
 def update_viewers(usernames: [str]):
     empty_users = [{'name': user, 'points': 0, 'modified': arrow.now().format()} for user in usernames]
     Points.insert_many(empty_users).on_conflict(action='IGNORE').execute()
