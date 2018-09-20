@@ -44,6 +44,7 @@ def save_commands(commands_list):
 
 
 def add_command(name, command):
+    # check for integrity error from peewee
     global commands_list
     if name in commands_list:
         return f'!{name} already exists!'
