@@ -4,8 +4,7 @@ import cfg
 import socket
 import api
 import commands
-import points
-import db
+import point_db
 
 from time import sleep, time
 import threading

@@ -4,11 +4,13 @@ from peewee import *
 import arrow
 from random import randint
 
-db = SqliteDatabase('twitchpoints.db')
+db = SqliteDatabase('db/twitchpoints.db')
+
 
 class BaseModel(Model):
     class Meta:
         database = db
+
 
 class Points(BaseModel):
     name = CharField(unique = True)
@@ -29,17 +31,19 @@ def get_points(username) -> str:
         return user.points
     return -1
 
+
 def points_command(user1, user2):
-    u2 = False
+    user2exists = False
     if not user2:
         pts = get_points(user1)
     else:
         pts = get_points(user2)
-        u2 = True
+        user2exists = True
     if pts == -1:
         return "You goofed. Try again nerd."
-    usr = user2 if u2 else user1
-    return f"{usr} has {str(pts)} points!"
+    user = user2 if user2exists else user1
+    return f"{user} has {str(pts)} points!"
+
 
 def parse_points_command(msg) -> (str,int):
     message = msg.split()
@@ -81,20 +85,25 @@ def increment_points(name, pts, type='+') -> str:
 def gamble(username, wager):
     user = Points.get(Points.name == username)
     points = user.points
+
     delta = (arrow.now() - arrow.get(user.modified)).seconds
     if (delta < 5):
         return "Be patient. Don't gamble too often."
+
+    wager = points if wager == 'all' else int(wager)
+
     if wager < 0:
-        return "Can't bet negative numbers.,"
+        return "Can't bet negative numbers."
+
     roll = randint(1, 100)
     if wager > points:
         return "You don't have enough points to gamble."
     if roll > 50:
         increment_points(username, wager, "+")
-        return f"You rolled a {str(roll)}! You've won {wager} points."
+        return f"You rolled a {str(roll)}! You've won {wager} points. You now have {str(points + wager)} points."
     else:
         increment_points(username, wager, "-")
-        return f"You rolled a {str(roll)}! You've lost {wager} points, loser."
+        return f"You rolled a {str(roll)}! You've lost {wager} points, loser. You now have {str(points - wager)} points."
 
 
 def create_table():
