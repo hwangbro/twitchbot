@@ -5,6 +5,7 @@ import socket
 import api
 import commands
 import points
+import db
 
 from time import sleep, time
 import threading
@@ -33,7 +34,7 @@ def update_points():
     while True:
         sleep(60)
         print("updating")
-        points.update_viewers(api.get_viewers())
+        db.update_viewers(api.get_viewers())
 
 
 def main():

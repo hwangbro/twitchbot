@@ -23,6 +23,24 @@ def update_viewers(usernames: [str]):
     query.execute()
 
 
+def get_points(username) -> str:
+    user = Points.get_or_none(Points.name == username)
+    if user:
+        return user.points
+    return -1
+
+def points_command(user1, user2):
+    u2 = False
+    if not user2:
+        pts = get_points(user1)
+    else:
+        pts = get_points(user2)
+        u2 = True
+    if pts == -1:
+        return "You goofed. Try again nerd."
+    usr = user2 if u2 else user1
+    return f"{usr} has {str(pts)} points!"
+
 def parse_points_command(msg) -> (str,int):
     message = msg.split()
     if len(message) != 2:
@@ -38,13 +56,13 @@ def handle_point_command(cmd, msg):
     name, pts = parse_points_command(msg)
     if cmd == 'addpoints':
         increment_points(name, pts, '+')
-        return ""
+        return f"You have successfully added {str(pts)} points to {name}!"
     elif cmd == 'subpoints':
         increment_points(name, pts, '-')
-        return ""
+        return f"You have successfully subtracted {str(pts)} points to {name}!"
     elif cmd == 'setpoints':
         set_points(name, pts)
-        return ""
+        return f"{name} now has {str(pts)} points!"
 
 
 def set_points(name, pts) -> str:
@@ -65,21 +83,18 @@ def gamble(username, wager):
     points = user.points
     delta = (arrow.now() - arrow.get(user.modified)).seconds
     if (delta < 5):
-        print("not enough time passed")
-        return ""
+        return "Be patient. Don't gamble too often."
     if wager < 0:
-        print("can't bet negative numbers")
+        return "Can't bet negative numbers.,"
     roll = randint(1, 100)
     if wager > points:
         return "You don't have enough points to gamble."
     if roll > 50:
         increment_points(username, wager, "+")
-        print("you won")
-        # return f"You rolled a {str(roll)}! You've won {wager} points."
+        return f"You rolled a {str(roll)}! You've won {wager} points."
     else:
         increment_points(username, wager, "-")
-        print("you lost")
-        # return f"You rolled a {str(roll)}! You've lost {wager} points, loser."
+        return f"You rolled a {str(roll)}! You've lost {wager} points, loser."
 
 
 def create_table():
