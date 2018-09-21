@@ -27,9 +27,9 @@ def update_viewers(usernames: [str]):
     '''
 
     empty_users = [{'name': user, 'points': 0, 'modified': arrow.now().format()} for user in usernames]
-    Points.insert_many(empty_users).on_conflict(action='IGNORE').execute()
-    query = Points.update(points = Points.points + 1).where(Points.name in usernames)
-    query.execute()
+    Points.insert_many(empty_users).on_conflict(
+        conflict_target=[Points.name],
+        update={Points.points: Points.points + 1}).execute()
 
 
 def get_points(username) -> str:
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     print_users()
     # update_viewers(['hwangbroxd', 'asdf'])
     # set_points('hwangbroxd', 25)
-    gamble('hwangbroxd', 5)
+    # gamble('hwangbroxd', 5)
     # handle_point_command("setpoints", "hwangbroxd 15")
     print_users()
 
