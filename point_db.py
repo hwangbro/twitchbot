@@ -75,12 +75,10 @@ def parse_points_command(msg) -> (str,int):
     '''
 
     message = msg.split()
-    if len(message) != 2:
-        return "Incorrect format."
     try:
         user, pts = message
         return user, int(pts)
-    except:
+    except ValueError:
         return "Incorrect format."
 
 
