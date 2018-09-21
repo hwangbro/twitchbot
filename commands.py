@@ -1,18 +1,19 @@
 # Command handling
 
 import api
-from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 from bot import chat
 import cfg
-import json
 import point_db
 import command_db
+
+from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 
 # To add, remove, or edit commands, the admin can type
 # !add !command text here
 # !edit !command text here
 # !remove !command
 
+# Dictionary mapping commands to their respective function calls.
 commands_func_list = {
     'title': api.get_title,
     'game': api.get_game,
@@ -20,32 +21,44 @@ commands_func_list = {
     'botmasters': api.get_pro_mods,
 }
 
+# Commands impacting other commands.
 meta_commands = ['remove', 'add', 'edit']
+
+# 'Admin' commands for point modifications.
 point_commands = ['addpoints', 'subpoints', 'setpoints']
 
+# 'Admin' commands for channel metadata modifications.
 admin_commands = {
     'setgame': api.set_game,
     'settitle': api.set_title,
 }
 
-
-parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Combine("!" + Word(alphanums))).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
+# Parser to grab command keywords from chat messages.
+parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':!' + Word(alphas).setResultsName('cmd') + Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd') + restOfLine.setResultsName('msg')
 
 
 def parse_command(response) -> (str,):
     '''Parse the response for potential command formats'''
 
-    print(response, end='')
-    tmp = list(parser.scanString(response))
-    if not tmp:
+    parsed = list(parser.scanString(response))
+    if not parsed:
         return ('','','','')
-    res = tmp[0][0]
+    res = parsed[0][0]
     return res.username.strip().lower(), res.cmd.strip().lower(), res.new_cmd.strip().lower(), res.msg.strip()
 
 
 def handle_command(sock, response) -> None:
+    '''Execute commands given by users.
+
+    All command handling return strings to be
+    printed out to the socket.
+    '''
+
+    # Parse the message for command keywords.
     username, cmd, new_cmd, msg = parse_command(response)
     username = username.lower()
+
+    # If command is found
     if cmd:
         static = command_db.get_command(cmd)
         if static:
@@ -69,6 +82,8 @@ def handle_command(sock, response) -> None:
 
 
 def handle_meta_command(name, command_name='', command_text='') -> str:
+    '''Properly handles meta commands.'''
+
     if name == 'remove':
         command_db.remove_command(command_name)
         return f"You've successfully removed the command {command_name}"
