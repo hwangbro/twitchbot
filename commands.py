@@ -1,18 +1,19 @@
 # Command handling
 
 import api
-from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 from bot import chat
 import cfg
-import json
-import db
+import point_db
 import command_db
+
+from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 
 # To add, remove, or edit commands, the admin can type
 # !add !command text here
 # !edit !command text here
 # !remove !command
 
+# Dictionary mapping commands to their respective function calls.
 commands_func_list = {
     'title': api.get_title,
     'game': api.get_game,
@@ -20,76 +21,47 @@ commands_func_list = {
     'botmasters': api.get_pro_mods,
 }
 
+# Commands impacting other commands.
 meta_commands = ['remove', 'add', 'edit']
+
+# 'Admin' commands for point modifications.
 point_commands = ['addpoints', 'subpoints', 'setpoints']
 
+# 'Admin' commands for channel metadata modifications.
 admin_commands = {
     'setgame': api.set_game,
     'settitle': api.set_title,
 }
 
-
-parser = ":" + Word(alphanums+"_").setResultsName("username") + Word(alphanums+"_!@.") + "PRIVMSG" + "#hwangbroxd" + ":!" + Word(alphas).setResultsName("cmd") + Optional(Combine("!" + Word(alphanums))).setResultsName("new_cmd") + restOfLine.setResultsName("msg")
-
-# def load_commands():
-#     with open('commands.json', 'r') as f:
-#         return json.load(f)
-
-# commands_list = load_commands()
-
-
-# def save_commands(commands_list):
-#     with open('commands.json', 'w') as f:
-#         json.dump(commands_list, f, indent=4)
-
-
-# def add_command(name, command):
-#     # check for integrity error from peewee
-#     global commands_list
-#     if name in commands_list:
-#         return f'!{name} already exists!'
-#     commands_list[name] = command
-#     save_commands(commands_list)
-#     commands_list = load_commands()
-#     return f'You\'ve successfully added the command !{name}'
-
-
-# def edit_command(name, command):
-#     global commands_list
-#     if name not in commands_list:
-#         return f'!{name} is not a command, cannot edit.'
-#     commands_list[name] = command
-#     save_commands(commands_list)
-#     commands_list = load_commands()
-#     return f'You\'ve successfully edited the command !{name}'
-
-
-# def remove_command(name):
-#     global commands_list
-#     if name not in commands_list:
-#         return f'!{name} is not an existing command.'
-#     del commands_list[name]
-#     save_commands(commands_list)
-#     commands_list = load_commands()
-#     return f'The command !{name} has been removed.'
+# Parser to grab command keywords from chat messages.
+parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':!' + Word(alphas).setResultsName('cmd') + Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd') + restOfLine.setResultsName('msg')
 
 
 def parse_command(response) -> (str,):
     '''Parse the response for potential command formats'''
 
-    print(response, end='')
-    tmp = list(parser.scanString(response))
-    if not tmp:
+    parsed = list(parser.scanString(response))
+    if not parsed:
         return ('','','','')
-    res = tmp[0][0]
+    res = parsed[0][0]
     return res.username.strip().lower(), res.cmd.strip().lower(), res.new_cmd.strip().lower(), res.msg.strip()
 
 
 def handle_command(sock, response) -> None:
+    '''Execute commands given by users.
+
+    All command handling return strings to be
+    printed out to the socket.
+    '''
+
+    # Parse the message for command keywords.
     username, cmd, new_cmd, msg = parse_command(response)
+    username = username.lower()
+
+    # If command is found
     if cmd:
         static = command_db.get_command(cmd)
-        if static: #change
+        if static:
             chat(sock, static)
         elif cmd in commands_func_list:
             chat(sock, commands_func_list[cmd]())
@@ -97,11 +69,11 @@ def handle_command(sock, response) -> None:
             commands_list = command_db.get_command_list()
             chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(commands_list.keys()) + list(commands_func_list.keys()))]))
         elif cmd == 'points':
-            chat(sock, db.points_command(username.lower(), msg.lower()))
-        elif cmd == 'gamble' and msg.isdigit(): #change
-            chat(sock, db.gamble(username.lower(), int(msg)))
-        elif cmd in point_commands and username in cfg.ADMIN: #change
-            chat(sock, db.handle_point_command(cmd, msg))
+            chat(sock, point_db.points_command(username, msg.lower()))
+        elif cmd == 'gamble' and (msg.isdigit() or msg == 'all'):
+            chat(sock, point_db.gamble(username, msg))
+        elif cmd in point_commands and username in cfg.ADMIN:
+            chat(sock, point_db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:
             chat(sock, admin_commands[cmd](msg))
         elif cmd in meta_commands and new_cmd:
@@ -110,6 +82,8 @@ def handle_command(sock, response) -> None:
 
 
 def handle_meta_command(name, command_name='', command_text='') -> str:
+    '''Properly handles meta commands.'''
+
     if name == 'remove':
         command_db.remove_command(command_name)
         return f"You've successfully removed the command {command_name}"
@@ -119,6 +93,7 @@ def handle_meta_command(name, command_name='', command_text='') -> str:
     elif name == 'edit':
         command_db.edit_command(command_name, command_text)
         return f"You've successfully edited the command {command_name}"
+
 
 if __name__ == '__main__':
     pass

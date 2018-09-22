@@ -1,14 +1,21 @@
-# Module to handle database read writes.
+# Module to handle point database read writes.
 
 from peewee import *
 import arrow
 from random import randint
 
-db = SqliteDatabase('twitchpoints.db')
+db = SqliteDatabase('db/twitchpoints.db', pragmas={
+        'journal_mode': 'wal',
+        'cache_size': -1 * 64000,
+        'foreign_keys': 1,
+        'ignore_check_constraints': 0,
+        'synchronous': 0})
+
 
 class BaseModel(Model):
     class Meta:
         database = db
+
 
 class Points(BaseModel):
     name = CharField(unique = True)
@@ -17,42 +24,67 @@ class Points(BaseModel):
 
 
 def update_viewers(usernames: [str]):
+    '''Adds one point to the specified users.
+
+    Function takes in a list of users.
+    If the users don't exist, add them into the database.
+    After all the users are 'added', increment all the users by 1 point.
+    '''
+
     empty_users = [{'name': user, 'points': 0, 'modified': arrow.now().format()} for user in usernames]
-    Points.insert_many(empty_users).on_conflict(action='IGNORE').execute()
-    query = Points.update(points = Points.points + 1).where(Points.name in usernames)
-    query.execute()
+    Points.insert_many(empty_users).on_conflict(
+        conflict_target=[Points.name],
+        update={Points.points: Points.points + 1}).execute()
 
 
 def get_points(username) -> str:
+    '''Gets the point value of a single user.'''
+
     user = Points.get_or_none(Points.name == username)
     if user:
         return user.points
     return -1
 
+
 def points_command(user1, user2):
-    u2 = False
+    '''Handles the '!points' command.
+
+    This handler is a bit more complex, given that
+    you can check others points as well.
+    user2 can be empty, which means you only check user1's points.
+    '''
+
+    user2exists = False
     if not user2:
         pts = get_points(user1)
     else:
         pts = get_points(user2)
-        u2 = True
+        user2exists = True
     if pts == -1:
         return "You goofed. Try again nerd."
-    usr = user2 if u2 else user1
-    return f"{usr} has {str(pts)} points!"
+    user = user2 if user2exists else user1
+    return f"{user} has {str(pts)} points!"
+
 
 def parse_points_command(msg) -> (str,int):
+    '''Parses the second portion of the meta points call.
+
+    A sample example is:
+        '!addpoints hwangbroxd 10'
+    This function parses the 'hwangbroxd 10' and gets those two values.
+    '''
+
     message = msg.split()
-    if len(message) != 2:
-        return "Incorrect format."
     try:
         user, pts = message
         return user, int(pts)
-    except:
+    except ValueError:
         return "Incorrect format."
 
 
 def handle_point_command(cmd, msg):
+    '''Overarching handler for meta point commands.'''
+
     name, pts = parse_points_command(msg)
     if cmd == 'addpoints':
         increment_points(name, pts, '+')
@@ -66,10 +98,14 @@ def handle_point_command(cmd, msg):
 
 
 def set_points(name, pts) -> str:
+    '''Set point function.'''
+
     query = Points.update(points = pts).where(Points.name == name).execute()
 
 
 def increment_points(name, pts, type='+') -> str:
+    '''This function handles both adding and subtracting.'''
+
     empty = Points.insert([{'name': name, 'points': 0, 'modified': arrow.now().format()}]).on_conflict(action='IGNORE').execute()
     if type == '+':
         query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name)
@@ -79,22 +115,34 @@ def increment_points(name, pts, type='+') -> str:
 
 
 def gamble(username, wager):
+    '''Simple gambling function.
+
+    Users can specify 'all' as the wager as well.
+    Wager must be a positive number, less than the
+    current amount of points a user has.
+    '''
+
     user = Points.get(Points.name == username)
     points = user.points
+
     delta = (arrow.now() - arrow.get(user.modified)).seconds
     if (delta < 5):
         return "Be patient. Don't gamble too often."
+
+    wager = points if wager == 'all' else int(wager)
+
     if wager < 0:
-        return "Can't bet negative numbers.,"
+        return "Can't bet negative numbers."
+
     roll = randint(1, 100)
     if wager > points:
         return "You don't have enough points to gamble."
     if roll > 50:
         increment_points(username, wager, "+")
-        return f"You rolled a {str(roll)}! You've won {wager} points."
+        return f"You rolled a {str(roll)}! You've won {wager} points. You now have {str(points + wager)} points."
     else:
         increment_points(username, wager, "-")
-        return f"You rolled a {str(roll)}! You've lost {wager} points, loser."
+        return f"You rolled a {str(roll)}! You've lost {wager} points, loser. You now have {str(points - wager)} points."
 
 
 def create_table():
@@ -113,13 +161,10 @@ def delete_all():
 
 if __name__ == "__main__":
     db.connect()
-    #create_table()
     print_users()
     # update_viewers(['hwangbroxd', 'asdf'])
-    # create_table()
-    # delete_all()
     # set_points('hwangbroxd', 25)
-    gamble('hwangbroxd', 5)
+    # gamble('hwangbroxd', 5)
     # handle_point_command("setpoints", "hwangbroxd 15")
     print_users()
 

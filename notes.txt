@@ -26,3 +26,8 @@ commands:
 peewee for sqlite
 try threading for auto points update
 	implement lock and sqlite for points
+
+
+download newest sqlite dll
+put into python installation folder to use upsert correctly
+https://www.sqlite.org/2018/sqlite-dll-win64-x64-3250100.zip
