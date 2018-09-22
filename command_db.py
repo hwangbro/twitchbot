@@ -39,3 +39,6 @@ def get_command_list() ->{str:str}:
 def clear_commands():
     for cmd in Commands.select():
         cmd.delete_instance()
+
+if __name__ == '__main__':
+	print(get_command_list())

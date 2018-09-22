@@ -5,6 +5,7 @@ from bot import chat
 import cfg
 import point_db
 import command_db
+import chat_db
 
 from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 
@@ -35,7 +36,7 @@ admin_commands = {
 
 # Parser to grab command keywords from chat messages.
 parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':!' + Word(alphas).setResultsName('cmd') + Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd') + restOfLine.setResultsName('msg')
-
+chat_parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':' + restOfLine.setResultsName('msg')
 
 def parse_command(response) -> (str,):
     '''Parse the response for potential command formats'''
@@ -47,12 +48,24 @@ def parse_command(response) -> (str,):
     return res.username.strip().lower(), res.cmd.strip().lower(), res.new_cmd.strip().lower(), res.msg.strip()
 
 
+def parse_message(response) -> (str,):
+    '''Parse the response for a message'''
+
+    parsed = list(chat_parser.scanString(response))
+    if not parsed:
+        return ('','')
+    res = parsed[0][0]
+    return res.username.strip().lower(), res.msg.strip()
+
+
 def handle_command(sock, response) -> None:
     '''Execute commands given by users.
 
     All command handling return strings to be
     printed out to the socket.
     '''
+    n, m = parse_message(response)
+    chat_db.add_msg(n,m)
 
     # Parse the message for command keywords.
     username, cmd, new_cmd, msg = parse_command(response)

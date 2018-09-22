@@ -37,7 +37,7 @@ def update_points():
     while True:
         sleep(60)
         print('updating')
-        db.update_viewers(api.get_viewers())
+        point_db.update_viewers(api.get_viewers())
 
 
 def main():
@@ -59,6 +59,7 @@ def main():
             if 'PokPikachu' in response and 'monipooh' in response:
                 chat(s, 'Pikachu LUL')
             else:
+                print(response)
                 commands.handle_command(s, response)
 
 
