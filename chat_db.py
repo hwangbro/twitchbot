@@ -21,9 +21,8 @@ class Chat(BaseModel):
 
 def add_msg(user, msg):
 	if user and msg:
-		Chat.insert(username=user, message=msg, date=arrow.now().format())
+		Chat.insert(username=user, message=msg, date=arrow.now().format()).execute()
 
 if __name__ == '__main__':
-	# tables = db.get_tables()
-	# print(tables)
-	pass
+	for chat in Chat.select():
+		print(chat.username, chat.message)
