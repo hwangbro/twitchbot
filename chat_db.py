@@ -24,5 +24,5 @@ def add_msg(user, msg):
 		Chat.insert(username=user, message=msg, date=arrow.now().format()).execute()
 
 if __name__ == '__main__':
-	for chat in Chat.select():
-		print(chat.username, chat.message)
+	for chat in Chat.select().order_by(Chat.date.desc()).limit(20):
+		print(chat.date, chat.username, chat.message)
