@@ -108,5 +108,11 @@ def handle_meta_command(name, command_name='', command_text='') -> str:
         return f"You've successfully edited the command {command_name}"
 
 
+def space_command(msg):
+    sep, *text = msg.split()
+    text = ' '.join(text)
+    return (' ' + sep + ' ').join(text)
+
+
 if __name__ == '__main__':
     pass
