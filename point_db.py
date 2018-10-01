@@ -47,6 +47,7 @@ def create_challenge(user1, user2, wager):
             return
         query = Challenge.create(challenger=user1, challenged=user2, wager=wager)
         print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
+        
     # 0) Check if unresolved challenge already exists with either user1 or user2
     # 1) check user1's points and see if they have enough
     # 2) subtract from user1's points (tentatively)
