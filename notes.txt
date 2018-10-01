@@ -31,3 +31,19 @@ try threading for auto points update
 download newest sqlite dll
 put into python installation folder to use upsert correctly
 https://www.sqlite.org/2018/sqlite-dll-win64-x64-3250100.zip
+
+
+
+challenge notes:
+    keep tracker of if someone is being challeneged, so one challenge to a person at a time
+    challenge eventually times out
+
+
+for points db
+    add total won and total lost
+    user can find delta with command
+
+    commands for avg win/loss
+    commands for tracking # of wins and # of losses, delta
+    commands for tracking # of points* won or lost, delta
+    total profits, avg earnings per gamble

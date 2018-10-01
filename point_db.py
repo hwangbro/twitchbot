@@ -19,9 +19,47 @@ class BaseModel(Model):
 
 class Points(BaseModel):
     name = CharField(unique = True)
-    points = IntegerField()
-    modified = DateTimeField()
+    points = IntegerField(default = 0)
+    modified = DateTimeField(default=arrow.now().format())
+    points_won = IntegerField(default = 0)
+    points_lost = IntegerField(default = 0)
+    times_won = IntegerField(default = 0)
+    times_lost = IntegerField(default = 0)
 
+
+class Challenge(BaseModel):
+    challenger = CharField()
+    challenged = CharField()
+    resolved = BooleanField(default=False)
+    wager = IntegerField(default=0)
+    winner = CharField(default="NONE")
+    date = DateTimeField(default=arrow.now().format())
+
+
+def create_challenge(user1, user2, wager):
+    query = Challenge.get_or_none((Challenge.challenger == user1 or Challenge.challenger == user2) and Challenge.resolved == False)
+    if query:
+        print("Challenge already found!! noob.")
+        print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
+    else:
+        if get_points(user1) < wager:
+            print("not enough points noob")
+            return
+        query = Challenge.create(challenger=user1, challenged=user2, wager=wager)
+        print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
+    # 0) Check if unresolved challenge already exists with either user1 or user2
+    # 1) check user1's points and see if they have enough
+    # 2) subtract from user1's points (tentatively)
+    # 3) Create the challenge table entry
+
+
+def clean_challenges():
+    pass
+    # this runs every time update_viewers is called
+    # go through all challenges that are unresolved
+    # check if time has passed since date()
+    # if enough time passed, reimburse the challenger with the wager
+    # mark resolved, winner = NONE
 
 def update_viewers(usernames: [str]):
     '''Adds one point to the specified users.
@@ -31,13 +69,13 @@ def update_viewers(usernames: [str]):
     After all the users are 'added', increment all the users by 1 point.
     '''
 
-    empty_users = [{'name': user, 'points': 0, 'modified': arrow.now().format()} for user in usernames]
+    empty_users = [{'name': user} for user in usernames]
     Points.insert_many(empty_users).on_conflict(
         conflict_target=[Points.name],
         update={Points.points: Points.points + 1}).execute()
 
 
-def get_points(username) -> str:
+def get_points(username) -> int:
     '''Gets the point value of a single user.'''
 
     user = Points.get_or_none(Points.name == username)
@@ -86,11 +124,12 @@ def handle_point_command(cmd, msg):
     '''Overarching handler for meta point commands.'''
 
     name, pts = parse_points_command(msg)
+    empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if cmd == 'addpoints':
-        increment_points(name, pts, '+')
+        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name).execute()
         return f"You have successfully added {str(pts)} points to {name}!"
     elif cmd == 'subpoints':
-        increment_points(name, pts, '-')
+        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name).execute()
         return f"You have successfully subtracted {str(pts)} points to {name}!"
     elif cmd == 'setpoints':
         set_points(name, pts)
@@ -106,11 +145,11 @@ def set_points(name, pts) -> str:
 def increment_points(name, pts, type='+') -> str:
     '''This function handles both adding and subtracting.'''
 
-    empty = Points.insert([{'name': name, 'points': 0, 'modified': arrow.now().format()}]).on_conflict(action='IGNORE').execute()
+    empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
-        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points = Points.points + pts, points_won = Points.points_won + pts, times_won = Points.times_won + 1, modified = arrow.now().format()).where(Points.name == name)
     elif type == '-':
-        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points = Points.points - pts, points_lost = Points.points_lost + pts, times_lost = Points.times_lost + 1, modified = arrow.now().format()).where(Points.name == name)
     query.execute()
 
 
@@ -122,7 +161,7 @@ def gamble(username, wager):
     current amount of points a user has.
     '''
 
-    user = Points.get(Points.name == username)
+    user = get_user(username)
     points = user.points
 
     delta = (arrow.now() - arrow.get(user.modified)).seconds
@@ -145,13 +184,49 @@ def gamble(username, wager):
         return f"You rolled a {str(roll)}! You've lost {wager} points, loser. You now have {str(points - wager)} points."
 
 
+def delta_points(user) -> str:
+    user = get_user(user)
+    total = user.points_won - user.points_lost
+    res = "profit" if total > 0 else "deficit"
+    return f"You have a lifetime {res} of {total} points."
+
+
+def get_point_win_total(user) -> str:
+    user = get_user(user)
+    won = user.points_won
+    return f"You have won {won} points total."
+
+
+def get_point_lost_total(user) -> str:
+    user = get_user(user)
+    lost = user.points_lost
+    return f"You have lost {lost} points total."
+
+
+def get_gamble_win_total(user) -> str:
+    user = get_user(user)
+    won = user.times_won
+    return f"You have won {won} gambling endeavors total."
+
+
+def get_gamble_loss_total(user) -> str:
+    user = get_user(user)
+    lost = user.times_lost
+    return f"You have lost {lost} gambling endeavors total."
+
+
+def get_user(username) -> Points:
+    user = Points.get(Points.name == username)
+    return user
+
+
 def create_table():
-    db.create_tables([Points])
+    db.create_tables([Points, Challenge])
 
 
 def print_users():
     for user in Points.select():
-        print(user.name, user.points)
+        print(user.name, user.points, user.points_won, user.points_lost, user.times_won, user.times_lost)
 
 
 def delete_all():
@@ -161,12 +236,14 @@ def delete_all():
 
 if __name__ == "__main__":
     db.connect()
-    print_users()
+    # create_table()
+    create_challenge('gay_zach', 'unlord1', 100)
+    # print_users()
     # update_viewers(['hwangbroxd', 'asdf'])
     # set_points('hwangbroxd', 25)
     # gamble('hwangbroxd', 5)
     # handle_point_command("setpoints", "hwangbroxd 15")
-    print_users()
+    # print_users()
 
 
 
