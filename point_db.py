@@ -25,6 +25,10 @@ class Points(BaseModel):
     points_lost = IntegerField(default = 0)
     times_won = IntegerField(default = 0)
     times_lost = IntegerField(default = 0)
+    challenges_won = IntegerField(default=0)
+    challenges_lost = IntegerField(default=0)
+    challenge_points_won = IntegerField(default=0)
+    challenge_points_lost = IntegerField(default=0)
 
 
 class Challenge(BaseModel):
@@ -37,7 +41,7 @@ class Challenge(BaseModel):
 
 
 def create_challenge(user1, user2, wager):
-    query = Challenge.get_or_none((Challenge.challenger == user1 or Challenge.challenger == user2) and Challenge.resolved == False)
+    query = Challenge.get_or_none(((Challenge.challenger == user1) | (Challenge.challenger == user2)) & (Challenge.resolved == False))
     if query:
         print("Challenge already found!! noob.")
         print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
@@ -46,21 +50,99 @@ def create_challenge(user1, user2, wager):
             print("not enough points noob")
             return
         query = Challenge.create(challenger=user1, challenged=user2, wager=wager)
+        increment_points_without_update(user1, wager, '-')
         print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
         
     # 0) Check if unresolved challenge already exists with either user1 or user2
     # 1) check user1's points and see if they have enough
-    # 2) subtract from user1's points (tentatively)
+    # 2) subtract from user1's points (tentatively) **
     # 3) Create the challenge table entry
 
 
+def check_challenge(user):
+    query = Challenge.get_or_none(((Challenge.challenger == user) | (Challenge.challenged == user)) & (Challenge.resolved == False))
+    if query:
+        if query.challenger == user:
+            print(f"You are challenging {query.challenged}")
+        else:
+            print(f"You are being challenged by {query.challenger}")
+    else:
+        print("You are currently not involved in a challenge.")
+
+
 def clean_challenges():
-    pass
+    for chall in Challenge.select().where(Challenge.resolved==False):
+        if (arrow.now() - arrow.get(chall.date)).seconds > 180:
+            print("this challenge has expired.")
+            print(chall.challenger, chall.challenged, chall.wager)
+            chall.resolved = True
+            chall.winner = 'EXPIRED'
+            chall.save()
+            increment_points_without_update(chall.challenger, chall.wager, '+')
+
     # this runs every time update_viewers is called
     # go through all challenges that are unresolved
     # check if time has passed since date()
     # if enough time passed, reimburse the challenger with the wager
     # mark resolved, winner = NONE
+
+def accept_challenge(user):
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
+    if query:
+        if get_points(user) < query.wager:
+            print("you dont have enough points to accept the challenge")
+        else:
+            increment_points_without_update(user, query.wager, '-')
+            print(f"accepting challenge from {query.challenger}")
+            perform_challenge(query)
+    else:
+        print("you dont have an active challenge.")
+    # this runs when user accepts challenge
+    # check if challenge expired, then check if user has enough points
+    # if so, subtract (tentative) wager from challenged
+    # call the function to execute the challenge
+
+
+def perform_challenge(chall):
+    # takes in the challenge object
+    # roll twice, once for challenger, once for challenged
+    # whoever rolls higher wins
+    # add double the wager (for tentative) and add to points_won
+    # mark as resolved, add name to winner field
+    user1 = get_user(chall.challenger)
+    user2 = get_user(chall.challenged)
+    print(f"initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.")
+    roll1 = randint(1,100)
+    roll2 = randint(1,100)
+    print(f"First roll: {chall.challenger} rolls a {roll1}")
+    print(f"Second roll: {chall.challenged} rolls a {roll2}")
+    if roll1 == roll2:
+        user1.challenge_points_lost += chall.wager
+        user2.challenge_points_lost += chall.wager
+        user1.save()
+        user2.save()
+
+        print(f"You both rolled the same number! That means you both lose! Haha!")
+        chall.winner = "TIE"
+    else:
+        if roll1 > roll2:
+            update_challenge_winner(user1, user2, chall.wager)
+            chall.winner = chall.challenger
+        elif roll2 > roll1:
+            update_challenge_winner(user2, user1, chall.wager)
+            chall.winner = chall.challenged
+    chall.resolved = True
+    chall.save()
+
+def update_challenge_winner(winner, loser, wager):
+    winner.challenge_points_won += wager
+    loser.challenge_points_lost += wager
+    winner.challenges_won += 1
+    loser.challenges_lost += 1
+    winner.points += wager * 2
+    winner.save()
+    loser.save()
+    print(f"{winner.name} wins {wager} points! Better luck next time, {loser.name}.")
 
 def update_viewers(usernames: [str]):
     '''Adds one point to the specified users.
@@ -127,10 +209,10 @@ def handle_point_command(cmd, msg):
     name, pts = parse_points_command(msg)
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if cmd == 'addpoints':
-        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name).execute()
+        increment_points_without_update(name, pts, '+')
         return f"You have successfully added {str(pts)} points to {name}!"
     elif cmd == 'subpoints':
-        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name).execute()
+        increment_points_without_update(name, pts, '-')
         return f"You have successfully subtracted {str(pts)} points to {name}!"
     elif cmd == 'setpoints':
         set_points(name, pts)
@@ -151,6 +233,17 @@ def increment_points(name, pts, type='+') -> str:
         query = Points.update(points = Points.points + pts, points_won = Points.points_won + pts, times_won = Points.times_won + 1, modified = arrow.now().format()).where(Points.name == name)
     elif type == '-':
         query = Points.update(points = Points.points - pts, points_lost = Points.points_lost + pts, times_lost = Points.times_lost + 1, modified = arrow.now().format()).where(Points.name == name)
+    query.execute()
+
+
+def increment_points_without_update(name, pts, type='+') -> str:
+    '''This function handles both adding and subtracting.'''
+
+    empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
+    if type == '+':
+        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name)
+    elif type == '-':
+        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name)
     query.execute()
 
 
@@ -217,8 +310,8 @@ def get_gamble_loss_total(user) -> str:
 
 
 def get_user(username) -> Points:
-    user = Points.get(Points.name == username)
-    return user
+    user = Points.get_or_create(name = username)
+    return user[0]
 
 
 def create_table():
@@ -227,8 +320,12 @@ def create_table():
 
 def print_users():
     for user in Points.select():
-        print(user.name, user.points, user.points_won, user.points_lost, user.times_won, user.times_lost)
+        print(user.name, user.points, user.challenges_won, user.challenges_lost)
 
+
+def print_challenges():
+    for challenge in Challenge.select():
+        print(challenge.challenger, challenge.challenged, challenge.wager, challenge.resolved)
 
 def delete_all():
     for user in Points.select():
@@ -238,8 +335,10 @@ def delete_all():
 if __name__ == "__main__":
     db.connect()
     # create_table()
-    create_challenge('gay_zach', 'unlord1', 100)
-    # print_users()
+    print_users()
+    # create_challenge('hwangbroxd', 'unlord1', 9)
+    # accept_challenge('unlord1')
+    print_users()
     # update_viewers(['hwangbroxd', 'asdf'])
     # set_points('hwangbroxd', 25)
     # gamble('hwangbroxd', 5)
