@@ -47,3 +47,7 @@ for points db
     commands for tracking # of wins and # of losses, delta
     commands for tracking # of points* won or lost, delta
     total profits, avg earnings per gamble
+
+
+    for converting chat command to challenge/accept
+        return list of strings to iterate and chat through socket

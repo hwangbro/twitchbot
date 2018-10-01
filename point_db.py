@@ -73,8 +73,7 @@ def check_challenge(user):
 def clean_challenges():
     for chall in Challenge.select().where(Challenge.resolved==False):
         if (arrow.now() - arrow.get(chall.date)).seconds > 180:
-            print("this challenge has expired.")
-            print(chall.challenger, chall.challenged, chall.wager)
+            print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
             chall.resolved = True
             chall.winner = 'EXPIRED'
             chall.save()
@@ -90,13 +89,13 @@ def accept_challenge(user):
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         if get_points(user) < query.wager:
-            print("you dont have enough points to accept the challenge")
+            return("you dont have enough points to accept the challenge")
         else:
             increment_points_without_update(user, query.wager, '-')
-            print(f"accepting challenge from {query.challenger}")
+            # return(f"accepting challenge from {query.challenger}")
             perform_challenge(query)
     else:
-        print("you dont have an active challenge.")
+        return("you dont have an active challenge.")
     # this runs when user accepts challenge
     # check if challenge expired, then check if user has enough points
     # if so, subtract (tentative) wager from challenged
@@ -109,11 +108,9 @@ def perform_challenge(chall):
     # whoever rolls higher wins
     # add double the wager (for tentative) and add to points_won
     # mark as resolved, add name to winner field
-    user1 = get_user(chall.challenger)
-    user2 = get_user(chall.challenged)
+    user1, user2 = get_user(chall.challenger), get_user(chall.challenged)
     print(f"initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.")
-    roll1 = randint(1,100)
-    roll2 = randint(1,100)
+    roll1, roll2 = randint(1,100), randint(1,100)
     print(f"First roll: {chall.challenger} rolls a {roll1}")
     print(f"Second roll: {chall.challenged} rolls a {roll2}")
     if roll1 == roll2:
@@ -143,6 +140,11 @@ def update_challenge_winner(winner, loser, wager):
     winner.save()
     loser.save()
     print(f"{winner.name} wins {wager} points! Better luck next time, {loser.name}.")
+
+
+def handle_challenge_command(user, msg):
+    pass
+
 
 def update_viewers(usernames: [str]):
     '''Adds one point to the specified users.
@@ -327,10 +329,6 @@ def print_challenges():
     for challenge in Challenge.select():
         print(challenge.challenger, challenge.challenged, challenge.wager, challenge.resolved)
 
-def delete_all():
-    for user in Points.select():
-        user.delete_instance()
-
 
 if __name__ == "__main__":
     db.connect()
@@ -338,7 +336,6 @@ if __name__ == "__main__":
     print_users()
     # create_challenge('hwangbroxd', 'unlord1', 9)
     # accept_challenge('unlord1')
-    print_users()
     # update_viewers(['hwangbroxd', 'asdf'])
     # set_points('hwangbroxd', 25)
     # gamble('hwangbroxd', 5)

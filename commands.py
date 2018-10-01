@@ -85,6 +85,10 @@ def handle_command(sock, response) -> None:
             chat(sock, point_db.points_command(username, msg.lower()))
         elif cmd == 'gamble' and (msg.isdigit() or msg == 'all'):
             chat(sock, point_db.gamble(username, msg))
+        elif cmd == 'challenge':
+            chat(sock, point_db.handle_challenge_command(username, msg.lower()))
+        elif cmd == 'accept':
+            chat(sock, point_db.accept_challenge(username))
         elif cmd in point_commands and username in cfg.ADMIN:
             chat(sock, point_db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:
