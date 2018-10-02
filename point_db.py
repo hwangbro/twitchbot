@@ -41,17 +41,20 @@ class Challenge(BaseModel):
 
 
 def create_challenge(user1, user2, wager):
-    query = Challenge.get_or_none(((Challenge.challenger == user1) | (Challenge.challenger == user2)) & (Challenge.resolved == False))
+    if user1 == user2:
+        return("You can't challenge yourself.")
+    query = Challenge.get_or_none(((Challenge.challenger == user1) | (Challenge.challenger == user2) | (Challenge.challenged == user1) | (Challenge.challenged == user2)) & (Challenge.resolved == False))
     if query:
-        print("Challenge already found!! noob.")
-        print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
+        return("Challenge already found!!")
     else:
         if get_points(user1) < wager:
-            print("not enough points noob")
-            return
+            return("You don't have enough points for this challenge.")
+        if wager < 0:
+            return("You can't wager a negative value.")
         query = Challenge.create(challenger=user1, challenged=user2, wager=wager)
         increment_points_without_update(user1, wager, '-')
-        print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
+        return(f"You have successfully created a challenge with {user2} for {wager} points. {user2}, type '!accept' or '!decline'")
+        # print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
         
     # 0) Check if unresolved challenge already exists with either user1 or user2
     # 1) check user1's points and see if they have enough
@@ -72,7 +75,7 @@ def check_challenge(user):
 
 def clean_challenges():
     for chall in Challenge.select().where(Challenge.resolved==False):
-        if (arrow.now() - arrow.get(chall.date)).seconds > 180:
+        if (arrow.now() - arrow.get(chall.date)).seconds > 60:
             print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
             chall.resolved = True
             chall.winner = 'EXPIRED'
@@ -85,17 +88,40 @@ def clean_challenges():
     # if enough time passed, reimburse the challenger with the wager
     # mark resolved, winner = NONE
 
+
+def cancel_challenge(user):
+    query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
+    if query:
+        increment_points_without_update(query.challenger, query.wager, '+')
+        query.resolved = True
+        query.winner = 'CANCELLED'
+        query.save()
+        return (f"You have cancelled the challenge to {query.challenged}.")
+    else:
+        return "You're not currently in a challenge."
+
+def decline_challenge(user):
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
+    if query:
+        increment_points_without_update(query.challenger, query.wager, '+')
+        query.resolved = True
+        query.winner = 'DECLINED'
+        query.save()
+        return(f"The challenge from {query.challenger} has been declined.")
+    else:
+        return "You're not currently in a challenge."
+
 def accept_challenge(user):
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         if get_points(user) < query.wager:
-            return("you dont have enough points to accept the challenge")
+            return(["You don't have enough points to accept the challenge"])
         else:
             increment_points_without_update(user, query.wager, '-')
             # return(f"accepting challenge from {query.challenger}")
-            perform_challenge(query)
+            return(perform_challenge(query))
     else:
-        return("you dont have an active challenge.")
+        return(["You dont have an active challenge."])
     # this runs when user accepts challenge
     # check if challenge expired, then check if user has enough points
     # if so, subtract (tentative) wager from challenged
@@ -109,27 +135,29 @@ def perform_challenge(chall):
     # add double the wager (for tentative) and add to points_won
     # mark as resolved, add name to winner field
     user1, user2 = get_user(chall.challenger), get_user(chall.challenged)
-    print(f"initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.")
+    ret = []
+    ret.append(f"Initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.")
     roll1, roll2 = randint(1,100), randint(1,100)
-    print(f"First roll: {chall.challenger} rolls a {roll1}")
-    print(f"Second roll: {chall.challenged} rolls a {roll2}")
+    ret.append(f"First roll: {chall.challenger} rolls a {roll1}")
+    ret.append(f"Second roll: {chall.challenged} rolls a {roll2}")
     if roll1 == roll2:
         user1.challenge_points_lost += chall.wager
         user2.challenge_points_lost += chall.wager
         user1.save()
         user2.save()
 
-        print(f"You both rolled the same number! That means you both lose! Haha!")
+        ret.append(f"You both rolled the same number! That means you both lose! Haha!")
         chall.winner = "TIE"
     else:
         if roll1 > roll2:
-            update_challenge_winner(user1, user2, chall.wager)
+            ret.append(update_challenge_winner(user1, user2, chall.wager))
             chall.winner = chall.challenger
         elif roll2 > roll1:
-            update_challenge_winner(user2, user1, chall.wager)
+            ret.append(update_challenge_winner(user2, user1, chall.wager))
             chall.winner = chall.challenged
     chall.resolved = True
     chall.save()
+    return ret
 
 def update_challenge_winner(winner, loser, wager):
     winner.challenge_points_won += wager
@@ -139,11 +167,16 @@ def update_challenge_winner(winner, loser, wager):
     winner.points += wager * 2
     winner.save()
     loser.save()
-    print(f"{winner.name} wins {wager} points! Better luck next time, {loser.name}.")
+    return f"{winner.name} wins {wager} points! Better luck next time, {loser.name}."
 
 
 def handle_challenge_command(user, msg):
-    pass
+    try:
+        user2, wager = parse_points_command(msg)
+        return(create_challenge(user, user2, wager))
+    except ValueError:
+        return "Incorrect Format."
+    
 
 
 def update_viewers(usernames: [str]):
@@ -322,7 +355,9 @@ def create_table():
 
 def print_users():
     for user in Points.select():
-        print(user.name, user.points, user.challenges_won, user.challenges_lost)
+        print(user.name, user.points)
+        print("\tchallenges won: ", user.challenges_won)
+        print("\tchallenges lost:", user.challenges_lost)
 
 
 def print_challenges():
@@ -336,7 +371,7 @@ if __name__ == "__main__":
     print_users()
     # create_challenge('hwangbroxd', 'unlord1', 9)
     # accept_challenge('unlord1')
-    # update_viewers(['hwangbroxd', 'asdf'])
+    # update_viewers(['hwangbroxd', 'gay_zach'])
     # set_points('hwangbroxd', 25)
     # gamble('hwangbroxd', 5)
     # handle_point_command("setpoints", "hwangbroxd 15")

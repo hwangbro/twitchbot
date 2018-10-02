@@ -87,8 +87,13 @@ def handle_command(sock, response) -> None:
             chat(sock, point_db.gamble(username, msg))
         elif cmd == 'challenge':
             chat(sock, point_db.handle_challenge_command(username, msg.lower()))
+        elif cmd == 'cancel':
+            chat(sock, point_db.cancel_challenge(username))
+        elif cmd == 'decline':
+            chat(sock, point_db.decline_challenge(username))
         elif cmd == 'accept':
-            chat(sock, point_db.accept_challenge(username))
+            for msg in point_db.accept_challenge(username):
+                chat(sock, msg)
         elif cmd in point_commands and username in cfg.ADMIN:
             chat(sock, point_db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:

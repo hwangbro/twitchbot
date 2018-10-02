@@ -37,6 +37,7 @@ def update_points():
     while True:
         sleep(60)
         point_db.update_viewers(api.get_viewers())
+        point_db.clean_challenges()
 
 
 def main():
