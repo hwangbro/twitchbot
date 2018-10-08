@@ -69,7 +69,7 @@ def handle_command(sock, response) -> None:
 
     # Parse the message for command keywords.
     username, cmd, new_cmd, msg = parse_command(response)
-    username = username.lower()
+    username = username.lower().replace('@','')
 
     # If command is found
     if cmd:
