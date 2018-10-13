@@ -211,6 +211,8 @@ def points_command(user1, user2):
     '''
 
     user2exists = False
+    user1 = user1.replace("@", '')
+    user2 = user2.replace("@", '')
     if not user2:
         pts = get_points(user1)
     else:
@@ -233,7 +235,7 @@ def parse_points_command(msg) -> (str,int):
     message = msg.split()
     try:
         user, pts = message
-        return user, int(pts)
+        return user.replace("@", ""), int(pts)
     except ValueError:
         return "Incorrect format."
 
