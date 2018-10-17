@@ -191,6 +191,7 @@ def update_viewers(usernames: [str]):
     Points.insert_many(empty_users).on_conflict(
         conflict_target=[Points.name],
         update={Points.points: Points.points + 1}).execute()
+    increment_points_without_update('hwangbroxd', 50, type='+')
 
 
 def get_points(username) -> int:
