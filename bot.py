@@ -61,6 +61,7 @@ def main():
         pts.event.set()
         close_dbs()
         print('\nkilling bot')
+        s.shutdown(socket.SHUT_RDWR)
         s.close()
         sys.exit(0)
 
