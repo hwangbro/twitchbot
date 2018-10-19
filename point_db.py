@@ -379,6 +379,10 @@ def print_challenges():
         print(challenge.challenger, challenge.challenged, challenge.wager, challenge.resolved)
 
 
+def close_db():
+    db.close()
+
+
 if __name__ == "__main__":
     db.connect()
     # create_table()

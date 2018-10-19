@@ -62,7 +62,27 @@ import random
 # print(random.randint(1, 100))
 # print(test['b'])
 from os import getcwd
+from time import sleep
 
+def update_points():
+	print('hello')
 
-from playsound import playsound
-playsound(r'D:\Miscellaneous\Independent_Projects\twitchbot\sounds\oof.mp3')
+import threading
+
+class Test(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.event = threading.Event()
+
+    def run(self):
+        while not self.event.wait(10):
+             update_points()
+        print("killing thread")
+
+a = Test()
+a.start()
+try:
+	while True:
+		pass
+except KeyboardInterrupt:
+	a.event.set()

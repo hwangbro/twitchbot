@@ -49,5 +49,9 @@ def clear_commands():
         cmd.delete_instance()
 
 
+def close_db():
+    db.close()
+
+
 if __name__ == '__main__':
 	print(get_command_list())

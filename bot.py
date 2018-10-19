@@ -5,6 +5,8 @@ import socket
 import api
 import commands
 import point_db
+import command_db
+import chat_db
 
 from time import sleep, time
 import threading
@@ -27,17 +29,18 @@ def timeout(sock, user, secs=600):
     chat(sock, f'.timeout {user} {secs}')
 
 
-def update_points():
-    '''Update viewer points every minute.
+class UpdatePoints(threading.Thread):
+    '''Update viewer points every minute.'''
 
-    This function should be run in its own thread/process
-    in order to maintain normal bot functionality.
-    '''
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.event = threading.Event()
 
-    while True:
-        sleep(60)
-        point_db.update_viewers(api.get_viewers())
-        point_db.clean_challenges()
+    def run(self):
+        while not self.event.wait(10):
+            point_db.update_viewers(api.get_viewers())
+            point_db.clean_challenges()
+        print("killing thread")
 
 
 def main():
@@ -47,20 +50,27 @@ def main():
     s.send(f'NICK {cfg.NICK}\r\n'.encode('utf-8'))
     s.send(f'JOIN {cfg.CHAN}\r\n'.encode('utf-8'))
 
-    points_thread = threading.Thread(target=update_points)
-    points_thread.daemon = True
-    points_thread.start()
+    pts = UpdatePoints()
+    pts.start()
 
-    while True:
-        response = s.recv(1024).decode('utf-8')
-        if response == 'PING :tmi.twitch.tv\r\n':
-            s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
-        else:
-            if 'PokPikachu' in response and 'monipooh' in response:
-                chat(s, 'Pikachu LUL')
+    try:
+        while True:
+            response = s.recv(1024).decode('utf-8')
+            if response == 'PING :tmi.twitch.tv\r\n':
+                s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
             else:
-                print(response, end='')
-                commands.handle_command(s, response)
+                if 'PokPikachu' in response and 'monipooh' in response:
+                    chat(s, 'Pikachu LUL')
+                else:
+                    print(response, end='')
+                    commands.handle_command(s, response)
+    except KeyboardInterrupt:
+        pts.event.set()
+        command_db.db.close()
+        point_db.db.close()
+        chat_db.db.close()
+        print('killing bot')
+
 
 
 if __name__ ==  '__main__':
