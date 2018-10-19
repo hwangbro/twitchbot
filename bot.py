@@ -12,19 +12,19 @@ import threading
 def chat(sock, msg):
     '''Sends a chat message through socket.'''
 
-    sock.send('PRIVMSG {} :{}\r\n'.format(cfg.CHAN, msg).encode('utf-8'))
+    sock.send(f'PRIVMSG {cfg.CHAN} :{msg}\r\n'.encode('utf-8'))
 
 
 def ban(sock, user):
     '''Bans the specified user from chat.'''
 
-    chat(sock, '.ban {}'.format(user))
+    chat(sock, f'.ban {user}')
 
 
 def timeout(sock, user, secs=600):
     '''Time out a user for set period of time.'''
 
-    chat(sock, '.timeout {}'.format(user, secs))
+    chat(sock, f'.timeout {user} {secs}')
 
 
 def update_points():
@@ -43,9 +43,9 @@ def update_points():
 def main():
     s = socket.socket()
     s.connect((cfg.HOST,cfg.PORT))
-    s.send('PASS {}\r\n'.format(cfg.PASS).encode('utf-8'))
-    s.send('NICK {}\r\n'.format(cfg.NICK).encode('utf-8'))
-    s.send('JOIN {}\r\n'.format(cfg.CHAN).encode('utf-8'))
+    s.send(f'PASS {cfg.PASS}\r\n'.encode('utf-8'))
+    s.send(f'NICK {cfg.NICK}\r\n'.encode('utf-8'))
+    s.send(f'JOIN {cfg.CHAN}\r\n'.encode('utf-8'))
 
     points_thread = threading.Thread(target=update_points)
     points_thread.daemon = True

@@ -41,6 +41,12 @@ class Challenge(BaseModel):
 
 
 def create_challenge(user1, user2, wager):
+    '''Creates a challenge between two users
+     Points are initially subtracted from user1 until the challenge
+    is either accepted or declined. If declined or cancelled,
+    user1 gets points back.
+    '''
+
     if user1 == user2:
         return("You can't challenge yourself.")
     query = Challenge.get_or_none(((Challenge.challenger == user1) | (Challenge.challenger == user2) | (Challenge.challenged == user1) | (Challenge.challenged == user2)) & (Challenge.resolved == False))
@@ -48,32 +54,17 @@ def create_challenge(user1, user2, wager):
         return("Challenge already found!!")
     else:
         if get_points(user1) < wager:
-            return("You don't have enough points for this challenge.")
+            return(f'{user1} only has {pts} points, not enough for this challenge.')
         if wager < 0:
             return("You can't wager a negative value.")
-        query = Challenge.create(challenger=user1, challenged=user2, wager=wager)
+        query = Challenge.create(challenger=user1, challenged=user2, wager=wager, date=arrow.now().format())
         increment_points_without_update(user1, wager, '-')
-        return(f"You have successfully created a challenge with {user2} for {wager} points. {user2}, type '!accept' or '!decline'")
-        # print(query.challenger, query.challenged, query.resolved, query.wager, query.date)
-        
-    # 0) Check if unresolved challenge already exists with either user1 or user2
-    # 1) check user1's points and see if they have enough
-    # 2) subtract from user1's points (tentatively) **
-    # 3) Create the challenge table entry
-
-
-def check_challenge(user):
-    query = Challenge.get_or_none(((Challenge.challenger == user) | (Challenge.challenged == user)) & (Challenge.resolved == False))
-    if query:
-        if query.challenger == user:
-            print(f"You are challenging {query.challenged}")
-        else:
-            print(f"You are being challenged by {query.challenger}")
-    else:
-        print("You are currently not involved in a challenge.")
+        return(f"{user1} has successfully created a challenge with {user2} for {wager} points. {user2}, please type '!accept' or '!decline'")
 
 
 def clean_challenges():
+    '''Expires challenges if they are active for over a minute.'''
+
     for chall in Challenge.select().where(Challenge.resolved==False):
         if (arrow.now() - arrow.get(chall.date)).seconds > 60:
             print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
@@ -90,64 +81,68 @@ def clean_challenges():
 
 
 def cancel_challenge(user):
+    '''Cancels a challenge that the user sent out.'''
+
     query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
         query.winner = 'CANCELLED'
         query.save()
-        return (f"You have cancelled the challenge to {query.challenged}.")
+        return f"{user} has cancelled the challenge to {query.challenged}."
     else:
-        return "You're not currently in a challenge."
+        return "f{user} is not currently in a challenge."
+
 
 def decline_challenge(user):
+    '''Allows a challenged to decline a challenge.'''
+
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
         query.winner = 'DECLINED'
         query.save()
-        return(f"The challenge from {query.challenger} has been declined.")
+        return f'{user} is a coward and declined the challenge from {query.challenger}.'
     else:
-        return "You're not currently in a challenge."
+        return f'{user} is not currently in a challenge.'
+
 
 def accept_challenge(user):
+    '''Handles the accept challenge sequence.'''
+
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         if get_points(user) < query.wager:
-            return(["You don't have enough points to accept the challenge"])
+            return([f"{user} doesn't have enough points to accept the challenge"])
         else:
             increment_points_without_update(user, query.wager, '-')
-            # return(f"accepting challenge from {query.challenger}")
             return(perform_challenge(query))
     else:
-        return(["You dont have an active challenge."])
-    # this runs when user accepts challenge
-    # check if challenge expired, then check if user has enough points
-    # if so, subtract (tentative) wager from challenged
-    # call the function to execute the challenge
+        return([f"{user} doesn't have an active challenge."])
 
 
 def perform_challenge(chall):
-    # takes in the challenge object
-    # roll twice, once for challenger, once for challenged
-    # whoever rolls higher wins
-    # add double the wager (for tentative) and add to points_won
-    # mark as resolved, add name to winner field
+    '''Executes the challenge between two users.
+    This function takes in the challenge DB object.
+    Due to constraints in the chat method, the return type is a list 
+    of strings to send to chat one by one.
+    '''
+
     user1, user2 = get_user(chall.challenger), get_user(chall.challenged)
     ret = []
-    ret.append(f"Initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.")
+    ret.append(f'Initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.')
     roll1, roll2 = randint(1,100), randint(1,100)
-    ret.append(f"First roll: {chall.challenger} rolls a {roll1}")
-    ret.append(f"Second roll: {chall.challenged} rolls a {roll2}")
+    ret.append(f'First roll: {chall.challenger} rolls a {roll1}')
+    ret.append(f'Second roll: {chall.challenged} rolls a {roll2}')
     if roll1 == roll2:
         user1.challenge_points_lost += chall.wager
         user2.challenge_points_lost += chall.wager
         user1.save()
         user2.save()
 
-        ret.append(f"You both rolled the same number! That means you both lose! Haha!")
-        chall.winner = "TIE"
+        ret.append(f'You both rolled the same number! That means you both lose! Haha!')
+        chall.winner = 'TIE'
     else:
         if roll1 > roll2:
             ret.append(update_challenge_winner(user1, user2, chall.wager))
@@ -159,7 +154,10 @@ def perform_challenge(chall):
     chall.save()
     return ret
 
+
 def update_challenge_winner(winner, loser, wager):
+    '''Updates db entries with challenge results'''
+
     winner.challenge_points_won += wager
     loser.challenge_points_lost += wager
     winner.challenges_won += 1
@@ -167,16 +165,17 @@ def update_challenge_winner(winner, loser, wager):
     winner.points += wager * 2
     winner.save()
     loser.save()
-    return f"{winner.name} wins {wager} points! Better luck next time, {loser.name}."
+    return f'{winner.name} wins {wager} points! Better luck next time, {loser.name}.'
 
 
 def handle_challenge_command(user, msg):
+    '''Parses the message for proper challenge format'''
+
     try:
         user2, wager = parse_points_command(msg)
         return(create_challenge(user, user2, wager))
     except ValueError:
-        return "Incorrect Format."
-    
+        return 'Incorrect Format.'
 
 
 def update_viewers(usernames: [str]):
@@ -191,7 +190,7 @@ def update_viewers(usernames: [str]):
     Points.insert_many(empty_users).on_conflict(
         conflict_target=[Points.name],
         update={Points.points: Points.points + 1}).execute()
-    increment_points_without_update('hwangbroxd', 50, type='+')
+    increment_points_without_update('hwangbroxd', 49, type='+')
 
 
 def get_points(username) -> int:
@@ -200,7 +199,7 @@ def get_points(username) -> int:
     user = Points.get_or_none(Points.name == username)
     if user:
         return user.points
-    return -1
+    return 0
 
 
 def points_command(user1, user2):
@@ -212,17 +211,15 @@ def points_command(user1, user2):
     '''
 
     user2exists = False
-    user1 = user1.replace("@", '')
-    user2 = user2.replace("@", '')
+    user1 = user1.replace('@', '')
+    user2 = user2.replace('@', '')
     if not user2:
         pts = get_points(user1)
     else:
         pts = get_points(user2)
         user2exists = True
-    if pts == -1:
-        return "You goofed. Try again nerd."
     user = user2 if user2exists else user1
-    return f"{user} has {str(pts)} points!"
+    return f'{user} has {pts} points!'
 
 
 def parse_points_command(msg) -> (str,int):
@@ -236,9 +233,9 @@ def parse_points_command(msg) -> (str,int):
     message = msg.split()
     try:
         user, pts = message
-        return user.replace("@", ""), int(pts)
+        return user.replace('@', ''), int(pts)
     except ValueError:
-        return "Incorrect format."
+        return 'Incorrect format.'
 
 
 def handle_point_command(cmd, msg):
@@ -248,13 +245,13 @@ def handle_point_command(cmd, msg):
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if cmd == 'addpoints':
         increment_points_without_update(name, pts, '+')
-        return f"You have successfully added {str(pts)} points to {name}!"
+        return f'You have successfully added {pts} points to {name}!'
     elif cmd == 'subpoints':
         increment_points_without_update(name, pts, '-')
-        return f"You have successfully subtracted {str(pts)} points to {name}!"
+        return f'You have successfully subtracted {pts} points to {name}!'
     elif cmd == 'setpoints':
         set_points(name, pts)
-        return f"{name} now has {str(pts)} points!"
+        return f'{name} now has {pts} points!'
 
 
 def set_points(name, pts) -> str:
@@ -307,47 +304,59 @@ def gamble(username, wager):
 
     roll = randint(1, 100)
     if wager > points:
-        return "You don't have enough points to gamble."
+        return f"{username} only has {points} points. You don't have enough to gamble."
     if roll > 50:
         increment_points(username, wager, "+")
-        return f"You rolled a {str(roll)}! You've won {wager} points. You now have {str(points + wager)} points."
+        return f"{username} rolled a {roll}! You've won {wager} points. You now have {points + wager} points."
     else:
         increment_points(username, wager, "-")
-        return f"You rolled a {str(roll)}! You've lost {wager} points, loser. You now have {str(points - wager)} points."
+        return f"{username} rolled a {roll}! You've lost {wager} points, loser. You now have {points - wager} points."
 
 
 def delta_points(user) -> str:
-    user = get_user(user)
-    total = user.points_won - user.points_lost
-    res = "profit" if total > 0 else "deficit"
-    return f"You have a lifetime {res} of {total} points."
+    '''Returns the lifetime delta for a user's gambling'''
+
+    user_pts = get_user(user)
+    total = user_pts.points_won - user_pts.points_lost
+    res = 'profit' if total > 0 else 'deficit'
+    return f'{user} has a lifetime {res} of {total} points.'
 
 
 def get_point_win_total(user) -> str:
+    '''Returns the lifetime points won'''
+
     user = get_user(user)
     won = user.points_won
     return f"You have won {won} points total."
 
 
 def get_point_lost_total(user) -> str:
-    user = get_user(user)
-    lost = user.points_lost
-    return f"You have lost {lost} points total."
+    '''Returns the lifetime points lost'''
+
+    user_pts = get_user(user)
+    lost = user_pts.points_lost
+    return f'{user} has lost {lost} points total.'
 
 
 def get_gamble_win_total(user) -> str:
-    user = get_user(user)
-    won = user.times_won
-    return f"You have won {won} gambling endeavors total."
+    '''Returns the number of gambles won'''
+
+    user_pts = get_user(user)
+    won = user_pts.times_won
+    return f'{user} has won {won} gambling endeavors total.'
 
 
 def get_gamble_loss_total(user) -> str:
-    user = get_user(user)
-    lost = user.times_lost
-    return f"You have lost {lost} gambling endeavors total."
+    '''Returns the number of gambles lost'''
+
+    user_pts = get_user(user)
+    lost = user_pts.times_lost
+    return f'{user} have lost {lost} gambling endeavors total.'
 
 
 def get_user(username) -> Points:
+    '''Returns a user db object from the username'''
+
     user = Points.get_or_create(name = username)
     return user[0]
 
@@ -379,81 +388,3 @@ if __name__ == "__main__":
     # gamble('hwangbroxd', 5)
     # handle_point_command("setpoints", "hwangbroxd 15")
     # print_users()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# db = sqlite3.connect('twitchpoints.db')
-# c = db.cursor()
-
-# #c.execute('CREATE TABLE viewer_points (ID INT PRIMARY KEY, USERNAME TEXT, POINTS INT);')
-# #c.execute("INSERT INTO viewer_points (ID, USERNAME, POINTS) VALUES (1, 'hwangbroXD', 0)")
-# cursor = c.execute("SELECT * FROM viewer_points")
-# # for row in cursor:
-# #     print(row)
-
-# def update_viewer(username):
-#     db = sqlite3.connect('twitchbot.db')
-#     c = db.cursor()
-#     c.execute('''SELECT POINTS from viewer_points WHERE USERNAME="{}"'''.format(username))
-#     result = c.fetchone()
-#     if result:
-#         updated_points = result[0] + 1
-#         c.execute('''UPDATE viewer_points set POINTS={} where USERNAME="{}"'''.format(updated_points, username))
-#         c.execute('''SELECT POINTS from viewer_points WHERE USERNAME="{}"'''.format(username))
-#         db.commit()
-#     else:
-#         c.execute('''INSERT INTO viewer_points (USERNAME, POINTS) VALUES ("{}", 0)'''.format(username.lower()))
-#         db.commit()
-
-
-# def get_points(username):
-#     db = sqlite3.connect('twitchbot.db')
-#     c = db.cursor()
-#     c.execute('''SELECT POINTS from viewer_points WHERE USERNAME="{}"'''.format(username))
-#     result = c.fetchone()
-#     if result:
-#         return '{}'.format(result[0])
-#     else:
-#         update_viewer(username)
-#         return '0'
-
-# def set_points(username, points):
-#     db = sqlite3.connect('twitchbot.db')
-#     c = db.cursor()
-#     c.execute('''SELECT POINTS from viewer_points WHERE USERNAME="{}"'''.format(username))
-#     result = c.fetchone()
-#     if result:
-#         updated_points = result[0] + points
-#         c.execute('''UPDATE viewer_points set POINTS={} where USERNAME="{}"'''.format(updated_points, username))
-#         c.execute('''SELECT POINTS from viewer_points WHERE USERNAME="{}"'''.format(username))
-#         db.commit()
-#     else:
-#         c.execute('''INSERT INTO viewer_points (USERNAME, POINTS) VALUES ("{}", {})'''.format(username.lower(), points))
-#         db.commit()
-# # update_viewer('hwangbroxd')
-# # print(get_points('hwangbroxd'))
-

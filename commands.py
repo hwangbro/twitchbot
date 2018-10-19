@@ -70,6 +70,7 @@ def handle_command(sock, response) -> None:
     # Parse the message for command keywords.
     username, cmd, new_cmd, msg = parse_command(response)
     username = username.lower().replace('@','')
+    msg = msg.lower()
 
     # If command is found
     if cmd:
@@ -82,18 +83,18 @@ def handle_command(sock, response) -> None:
             commands_list = command_db.get_command_list()
             chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(commands_list.keys()) + list(commands_func_list.keys()))]))
         elif cmd == 'points':
-            chat(sock, point_db.points_command(username, msg.lower()))
+            chat(sock, point_db.points_command(username, msg))
         elif cmd == 'gamble' and (msg.isdigit() or msg == 'all'):
             chat(sock, point_db.gamble(username, msg))
         elif cmd == 'challenge':
-            chat(sock, point_db.handle_challenge_command(username, msg.lower()))
+            chat(sock, point_db.handle_challenge_command(username, msg))
         elif cmd == 'cancel':
             chat(sock, point_db.cancel_challenge(username))
         elif cmd == 'decline':
             chat(sock, point_db.decline_challenge(username))
         elif cmd == 'accept':
-            for msg in point_db.accept_challenge(username):
-                chat(sock, msg)
+            for line in point_db.accept_challenge(username):
+                chat(sock, line)
         elif cmd in point_commands and username in cfg.ADMIN:
             chat(sock, point_db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:
