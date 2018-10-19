@@ -32,6 +32,10 @@ def close_db():
 	db.close()
 
 
+def create_table():
+	db.create_tables([Chat])
+
+
 if __name__ == '__main__':
 	for chat in Chat.select().order_by(Chat.date.desc()).limit(20):
 		print(chat.date, chat.username, chat.message)

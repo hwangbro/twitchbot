@@ -49,6 +49,10 @@ def clear_commands():
         cmd.delete_instance()
 
 
+def create_table():
+    db.create_tables([Commands])
+
+
 def close_db():
     db.close()
 

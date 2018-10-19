@@ -10,6 +10,9 @@ import chat_db
 
 from time import sleep, time
 import threading
+import signal
+import sys
+
 
 def chat(sock, msg):
     '''Sends a chat message through socket.'''
@@ -37,41 +40,48 @@ class UpdatePoints(threading.Thread):
         self.event = threading.Event()
 
     def run(self):
-        while not self.event.wait(10):
+        while not self.event.wait(60):
             point_db.update_viewers(api.get_viewers())
             point_db.clean_challenges()
-        print("killing thread")
 
 
 def main():
     s = socket.socket()
+    s.settimeout(0.5)
     s.connect((cfg.HOST,cfg.PORT))
     s.send(f'PASS {cfg.PASS}\r\n'.encode('utf-8'))
     s.send(f'NICK {cfg.NICK}\r\n'.encode('utf-8'))
     s.send(f'JOIN {cfg.CHAN}\r\n'.encode('utf-8'))
 
     pts = UpdatePoints()
+    pts.daemon = True
     pts.start()
 
-    try:
-        while True:
-            response = s.recv(1024).decode('utf-8')
-            if response == 'PING :tmi.twitch.tv\r\n':
-                s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
-            else:
-                if 'PokPikachu' in response and 'monipooh' in response:
-                    chat(s, 'Pikachu LUL')
-                else:
-                    print(response, end='')
-                    commands.handle_command(s, response)
-    except KeyboardInterrupt:
+    def signal_handler(signal, frame):
         pts.event.set()
-        command_db.db.close()
-        point_db.db.close()
-        chat_db.db.close()
-        print('killing bot')
+        close_dbs()
+        print('\nkilling bot')
+        s.close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    while True:
+        try:
+            response = s.recv(1024).decode('utf-8')
+        except socket.timeout:
+            continue
+        if response == 'PING :tmi.twitch.tv\r\n':
+            s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
+        else:
+            print(response, end='')
+            commands.handle_command(s, response)
 
 
+def close_dbs():
+    command_db.db.close()
+    point_db.db.close()
+    chat_db.db.close()
 
 if __name__ ==  '__main__':
     main()

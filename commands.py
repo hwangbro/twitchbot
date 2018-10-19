@@ -82,6 +82,8 @@ def handle_command(sock, response) -> None:
         static = command_db.get_command(cmd)
         if static:
             chat(sock, static)
+        elif username == 'monipooh' and 'pikachu' in msg:
+            chat(sock, 'Pikachu OMEGALUL')
         elif cmd in commands_func_list:
             chat(sock, commands_func_list[cmd]())
         elif cmd == 'commands':
