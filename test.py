@@ -41,7 +41,7 @@ data = {'channel': {'game': 'League of Legends'}}
 r = requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
 #print(r.json())
 
-print(api.get_viewers())
+# print(api.get_viewers())
 
 def set_game(game):
     if game.lower() == 'none':
@@ -61,3 +61,8 @@ r2 = requests.get(url=URL, headers=cfg.HEADERS)
 import random
 # print(random.randint(1, 100))
 # print(test['b'])
+from os import getcwd
+
+
+from playsound import playsound
+playsound(r'D:\Miscellaneous\Independent_Projects\twitchbot\sounds\oof.mp3')

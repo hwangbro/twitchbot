@@ -8,6 +8,7 @@ import command_db
 import chat_db
 
 from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
+from time import sleep
 
 # To add, remove, or edit commands, the admin can type
 # !add !command text here
@@ -21,6 +22,10 @@ commands_func_list = {
     'uptime': api.get_uptime,
     'botmasters': api.get_pro_mods,
 }
+
+# List of commands for plebs
+command_list = list(commands_func_list.keys())
+command_list.extend(['points', 'gamble', 'challenge'])
 
 # Commands impacting other commands.
 meta_commands = ['remove', 'add', 'edit']
@@ -80,8 +85,8 @@ def handle_command(sock, response) -> None:
         elif cmd in commands_func_list:
             chat(sock, commands_func_list[cmd]())
         elif cmd == 'commands':
-            commands_list = command_db.get_command_list()
-            chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(commands_list.keys()) + list(commands_func_list.keys()))]))
+            static_list = command_db.get_command_list()
+            chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(static_list.keys()) + command_list)]))
         elif cmd == 'points':
             chat(sock, point_db.points_command(username, msg))
         elif cmd == 'gamble' and (msg.isdigit() or msg == 'all'):
@@ -95,6 +100,7 @@ def handle_command(sock, response) -> None:
         elif cmd == 'accept':
             for line in point_db.accept_challenge(username):
                 chat(sock, line)
+                sleep(1.5)
         elif cmd in point_commands and username in cfg.ADMIN:
             chat(sock, point_db.handle_point_command(cmd, msg))
         elif cmd in admin_commands and username in cfg.ADMIN:

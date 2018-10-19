@@ -73,12 +73,6 @@ def clean_challenges():
             chall.save()
             increment_points_without_update(chall.challenger, chall.wager, '+')
 
-    # this runs every time update_viewers is called
-    # go through all challenges that are unresolved
-    # check if time has passed since date()
-    # if enough time passed, reimburse the challenger with the wager
-    # mark resolved, winner = NONE
-
 
 def cancel_challenge(user):
     '''Cancels a challenge that the user sent out.'''
@@ -169,8 +163,16 @@ def update_challenge_winner(winner, loser, wager):
 
 
 def handle_challenge_command(user, msg):
-    '''Parses the message for proper challenge format'''
+    '''Parses the message for proper challenge format.
 
+    This function also redirects cancel and decline commands
+    to the respective functions.
+    '''
+
+    if msg == 'decline':
+        return decline_challenge(user)
+    elif msg == 'cancel':
+        return cancel_challenge(user)
     try:
         user2, wager = parse_points_command(msg)
         return(create_challenge(user, user2, wager))
