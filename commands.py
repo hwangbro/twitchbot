@@ -42,27 +42,74 @@ admin_commands = {
 }
 
 # Parser to grab command keywords from chat messages.
-parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':!' + Word(alphas).setResultsName('cmd') + Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd') + restOfLine.setResultsName('msg')
-chat_parser = ':' + Word(alphanums+'_').setResultsName('username') + Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd' + ':' + restOfLine.setResultsName('msg')
+username = Word(alphanums+'_').setResultsName('username')
+irc_garb = Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd'
+cmd = ':!' + Word(alphas).setResultsName('cmd')
+new_cmd = Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd')
+msg = restOfLine.setResultsName('msg')
 
-def parse_command(response) -> (str,):
-    '''Parse the response for potential command formats'''
-
-    parsed = list(parser.scanString(response))
-    if not parsed:
-        return ('','','','')
-    res = parsed[0][0]
-    return res.username.strip().lower(), res.cmd.strip().lower(), res.new_cmd.strip().lower(), res.msg.strip()
+parser = ':' + username + irc_garb + cmd + new_cmd + msg
+chat_parser = ':' + username + irc_garb + ':' + msg
 
 
-def parse_message(response) -> (str,):
-    '''Parse the response for a message'''
+class Message:
+    '''Represents a chat message.
 
-    parsed = list(chat_parser.scanString(response))
-    if not parsed:
-        return ('','')
-    res = parsed[0][0]
-    return res.username.strip().lower(), res.msg.strip()
+    Has methods to parse internally for different types of 
+    commands and to assign variables accordingly.
+    '''
+
+    def __init__(self, text):
+        self.username = self.message = self.command = self.metacommand = self.command_body = self.points_user = ''
+        self.is_command = False
+
+        self.is_points_command = False
+        self.is_gamble_command = False
+        self.points_amount = 0
+
+        self.parse_msg(text)
+        self.parse_cmd(text)
+
+        if self.command in point_commands and self.username in cfg.ADMIN:
+            self.parse_points_command()
+
+        elif self.command == 'gamble':
+            self.parse_gamble_command()
+
+    def parse_cmd(self, text):
+        parsed = list(parser.scanString(text))
+        res = parsed[0][0] if parsed else ('','','','')
+        self.command = res.cmd.strip().lower()
+        self.command_body = res.msg.strip()
+        self.metacommand = res.new_cmd.strip().lower()
+        self.is_command = self.metacommand != ''
+
+    def parse_msg(self, text):
+        res = list(chat_parser.scanString(text))[0][0]
+        self.username = res.username.strip().lower()
+        self.message = res.msg.strip()
+
+    def parse_points_command(self):
+        self.is_points_command = True
+        message = self.command_body.split()
+        try:
+            self.points_user = message[0].replace('@', '')
+            self.points_amount = int(message[1])
+        except ValueError:
+            print('incorrect points format for ' + str(message))
+            raise
+
+    def parse_gamble_command(self):
+        self.is_gamble_command = True
+        try:
+            wager = self.command_body if self.command_body == 'all' else int(self.command_body)
+        except ValueError:
+            print('incorrect points format for ' + str(message))
+            raise
+        self.points_amount = wager
+
+    def __str__(self):
+        return f'[{self.username}]: {self.message}'
 
 
 def handle_command(sock, response) -> None:
@@ -71,46 +118,54 @@ def handle_command(sock, response) -> None:
     All command handling return strings to be
     printed out to the socket.
     '''
-    n, m = parse_message(response)
-    chat_db.add_msg(n,m)
-
-    # Parse the message for command keywords.
-    username, cmd, new_cmd, msg = parse_command(response)
-    username = username.lower().replace('@','')
-    msg = msg.lower()
+    msg = Message(response)
+    chat_db.add_msg(msg.username, msg.message)
 
     # If command is found
-    if cmd:
-        static = command_db.get_command(cmd)
+    if msg.command:
+        static = command_db.get_command(msg.command)
         if static:
             chat(sock, static)
-        elif username == 'monipooh' and 'pikachu' in msg:
+
+        elif msg.username == 'monipooh' and 'pikachu' in msg.message:
             chat(sock, 'Pikachu OMEGALUL')
-        elif cmd in commands_func_list:
-            chat(sock, commands_func_list[cmd]())
-        elif cmd == 'commands':
+
+        elif msg.command in commands_func_list:
+            chat(sock, commands_func_list[msg.command]())
+
+        elif msg.command == 'commands':
             static_list = command_db.get_command_list()
             chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(static_list.keys()) + command_list)]))
-        elif cmd == 'points':
-            chat(sock, point_db.points_command(username, msg))
-        elif cmd == 'gamble' and (msg.isdigit() or msg == 'all'):
-            chat(sock, point_db.gamble(username, msg))
-        elif cmd == 'challenge':
-            chat(sock, point_db.handle_challenge_command(username, msg))
-        elif cmd == 'cancel':
-            chat(sock, point_db.cancel_challenge(username))
-        elif cmd == 'decline':
-            chat(sock, point_db.decline_challenge(username))
-        elif cmd == 'accept':
-            for line in point_db.accept_challenge(username):
+
+        elif msg.command == 'points':
+            chat(sock, point_db.points_command(msg))
+
+        elif msg.command == 'gamble':
+            chat(sock, point_db.gamble(msg))
+
+        elif msg.command == 'challenge':
+            chat(sock, point_db.handle_challenge_command(msg.username, msg.message))
+
+        elif msg.command == 'cancel':
+            chat(sock, point_db.cancel_challenge(msg.username))
+
+        elif msg.command == 'decline':
+            chat(sock, point_db.decline_challenge(msg.username))
+
+        elif msg.command == 'accept':
+            for line in point_db.accept_challenge(msg.username):
                 chat(sock, line)
                 sleep(1.5)
-        elif cmd in point_commands and username in cfg.ADMIN:
-            chat(sock, point_db.handle_point_command(cmd, msg))
-        elif cmd in admin_commands and username in cfg.ADMIN:
-            chat(sock, admin_commands[cmd](msg))
-        elif cmd in meta_commands and new_cmd:
-            chat(sock, handle_meta_command(cmd, new_cmd[1:], msg))
+
+        elif msg.command in point_commands and msg.username in cfg.ADMIN:
+            chat(sock, point_db.handle_point_command(msg.command, msg.message))
+
+        elif msg.command in admin_commands and msg.username in cfg.ADMIN:
+            chat(sock, admin_commands[msg.command](msg.message))
+
+        elif msg.command in meta_commands and msg.metacommand:
+            chat(sock, handle_meta_command(msg.command, msg.metacommand[1:], msg.message))
+
     return
 
 

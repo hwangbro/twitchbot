@@ -164,19 +164,21 @@ def update_challenge_winner(winner, loser, wager):
     return f'{winner.name} wins {wager} points! Better luck next time, {loser.name}.'
 
 
-def handle_challenge_command(user, msg):
+def handle_challenge_command(msg):
     '''Parses the message for proper challenge format.
 
     This function also redirects cancel and decline commands
     to the respective functions.
     '''
+    user = msg.username
+    cmd = msg.message
 
-    if msg == 'decline':
+    if cmd == 'decline':
         return decline_challenge(user)
-    elif msg == 'cancel':
+    elif cmd == 'cancel':
         return cancel_challenge(user)
     try:
-        user2, wager = parse_points_command(msg)
+        user2, wager = parse_points_command(cmd)
         return(create_challenge(user, user2, wager))
     except ValueError:
         return 'Incorrect Format.'
@@ -206,13 +208,16 @@ def get_points(username) -> int:
     return 0
 
 
-def points_command(user1, user2):
+def points_command(msg):
     '''Handles the '!points' command.
 
     This handler is a bit more complex, given that
     you can check others points as well.
     user2 can be empty, which means you only check user1's points.
     '''
+
+    user1 = msg.username
+    user2 = msg.message
 
     user2exists = False
     user1 = user1.replace('@', '')
@@ -286,13 +291,15 @@ def increment_points_without_update(name, pts, type='+') -> str:
     query.execute()
 
 
-def gamble(username, wager):
+def gamble(msg):
     '''Simple gambling function.
 
     Users can specify 'all' as the wager as well.
     Wager must be a positive number, less than the
     current amount of points a user has.
     '''
+    username = msg.username
+    wager = msg.points_amount
 
     user = get_user(username)
     points = user.points
@@ -301,7 +308,8 @@ def gamble(username, wager):
     if (delta < 5):
         return "Be patient. Don't gamble too often."
 
-    wager = points if wager == 'all' else int(wager)
+    if wager == 'all':
+        wager = points
 
     if wager < 0:
         return "Can't bet negative numbers."
