@@ -1,18 +1,17 @@
 # Main module for the bot. Run this to start.
 
-import cfg
+import threading
 import socket
+from time import sleep, time
+import signal
+import sys
+
+import cfg
 import api
 import commands
 import point_db
 import command_db
 import chat_db
-
-from time import sleep, time
-import threading
-import signal
-import sys
-
 
 def chat(sock, msg):
     '''Sends a chat message through socket.'''
@@ -30,6 +29,14 @@ def timeout(sock, user, secs=600):
     '''Time out a user for set period of time.'''
 
     chat(sock, f'.timeout {user} {secs}')
+
+
+def close_dbs():
+    '''Closes the connections to the dbs.'''
+
+    command_db.db.close()
+    point_db.db.close()
+    chat_db.db.close()
 
 
 class UpdatePoints(threading.Thread):
@@ -58,6 +65,8 @@ def main():
     pts.start()
 
     def signal_handler(signal, frame):
+        '''Shuts down the UpdateThread and closes socket.'''
+
         pts.event.set()
         close_dbs()
         print('\nkilling bot')
@@ -78,11 +87,6 @@ def main():
             print(response, end='')
             commands.handle_command(s, response)
 
-
-def close_dbs():
-    command_db.db.close()
-    point_db.db.close()
-    chat_db.db.close()
 
 if __name__ ==  '__main__':
     main()

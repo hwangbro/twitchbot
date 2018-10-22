@@ -1,8 +1,10 @@
 # Module to handle point database read writes.
 
+from random import randint
+
 from peewee import *
 import arrow
-from random import randint
+
 
 db = SqliteDatabase('db/twitchpoints.db', pragmas={
         'journal_mode': 'wal',

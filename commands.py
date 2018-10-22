@@ -1,5 +1,9 @@
 # Command handling
 
+from time import sleep
+
+from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
+
 import api
 from bot import chat
 import cfg
@@ -7,8 +11,6 @@ import point_db
 import command_db
 import chat_db
 
-from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
-from time import sleep
 
 # To add, remove, or edit commands, the admin can type
 # !add !command text here

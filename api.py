@@ -3,10 +3,12 @@
 # TO-DO: refresh token checker
 # work toward helix
 
-import cfg
 import requests
-import arrow
 from time import sleep
+
+import arrow
+
+import cfg
 
 def get_new_token():
     # only run when token expires
