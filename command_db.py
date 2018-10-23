@@ -18,30 +18,30 @@ class BaseModel(Model):
 
 
 class Commands(BaseModel):
-    name = CharField(unique = True)
+    name = CharField(unique=True)
     text = CharField()
 
 
 def add_command(name, text):
-	Commands.insert(name=name, text=text).execute()
+    Commands.insert(name=name, text=text).execute()
 
 
 def remove_command(name):
-	Commands.delete().where(Commands.name == name).execute()
+    Commands.delete().where(Commands.name == name).execute()
 
 
 def edit_command(name, text):
-	Commands.replace(name=name, text=text).execute()
+    Commands.replace(name=name, text=text).execute()
 
 
 def get_command(name):
-	cmd = Commands.get_or_none(Commands.name==name)
-	if cmd:
-		return cmd.text
+    cmd = Commands.get_or_none(Commands.name == name)
+    if cmd:
+        return cmd.text
 
 
-def get_command_list() ->{str:str}:
-	return {c.name: c.text for c in Commands.select()}
+def get_command_list() -> {str: str}:
+    return {c.name: c.text for c in Commands.select()}
 
 
 def clear_commands():
@@ -58,4 +58,4 @@ def close_db():
 
 
 if __name__ == '__main__':
-	print(get_command_list())
+    print(get_command_list())

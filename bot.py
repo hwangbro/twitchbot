@@ -13,6 +13,7 @@ import point_db
 import command_db
 import chat_db
 
+
 def chat(sock, msg):
     """Sends a chat message through socket."""
 
@@ -55,7 +56,7 @@ class UpdatePoints(threading.Thread):
 def main():
     s = socket.socket()
     s.settimeout(0.5)
-    s.connect((cfg.HOST,cfg.PORT))
+    s.connect((cfg.HOST, cfg.PORT))
     s.send(f'PASS {cfg.PASS}\r\n'.encode('utf-8'))
     s.send(f'NICK {cfg.NICK}\r\n'.encode('utf-8'))
     s.send(f'JOIN {cfg.CHAN}\r\n'.encode('utf-8'))
@@ -82,7 +83,7 @@ def main():
             response = s.recv(1024).decode('utf-8')
         except socket.timeout:
             continue
-        except:
+        except Exception:
             chat(s, 'bot ded')
         if response == 'PING :tmi.twitch.tv\r\n':
             s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
@@ -90,5 +91,5 @@ def main():
             commands.handle_command(s, response)
 
 
-if __name__ ==  '__main__':
+if __name__ == '__main__':
     main()

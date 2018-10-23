@@ -10,6 +10,7 @@ import arrow
 
 import cfg
 
+
 def get_new_token():
     # only run when token expires
     # OAuth Implicit Code Flow (on api site)

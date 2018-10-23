@@ -55,7 +55,7 @@ chat_parser = ':' + username + irc_garb + ':' + msg
 class Message:
     """Represents a chat message.
 
-    Has methods to parse internally for different types of 
+    Has methods to parse internally for different types of
     commands and to assign variables accordingly.
     """
 
@@ -87,14 +87,12 @@ class Message:
             self.metacommand = res.new_cmd.strip().lower()
             self.is_command = self.metacommand != ''
 
-
     def parse_msg(self, text):
         parsed = list(chat_parser.scanString(text))
         if parsed:
             res = parsed[0][0]
             self.username = res.username.strip().lower()
             self.message = res.msg.strip()
-            
 
     def parse_points_command(self):
         self.is_points_command = True
@@ -115,10 +113,8 @@ class Message:
             raise
         self.points_amount = wager
 
-
     def __str__(self):
         return f'[{self.username}]: {self.message}'
-
 
 
 def handle_command(sock, response) -> None:

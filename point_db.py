@@ -20,13 +20,13 @@ class BaseModel(Model):
 
 
 class Points(BaseModel):
-    name = CharField(unique = True)
-    points = IntegerField(default = 0)
+    name = CharField(unique=True)
+    points = IntegerField(default=0)
     modified = DateTimeField(default=arrow.now().format())
-    points_won = IntegerField(default = 0)
-    points_lost = IntegerField(default = 0)
-    times_won = IntegerField(default = 0)
-    times_lost = IntegerField(default = 0)
+    points_won = IntegerField(default=0)
+    points_lost = IntegerField(default=0)
+    times_won = IntegerField(default=0)
+    times_lost = IntegerField(default=0)
     challenges_won = IntegerField(default=0)
     challenges_lost = IntegerField(default=0)
     challenge_points_won = IntegerField(default=0)
@@ -51,11 +51,11 @@ def create_challenge(user1, user2, wager):
 
     if user1 == user2:
         return("You can't challenge yourself.")
-    query = Challenge.get_or_none(((Challenge.challenger == user1) 
-        | (Challenge.challenger == user2) 
-        | (Challenge.challenged == user1) 
-        | (Challenge.challenged == user2)) 
-        & (Challenge.resolved == False))
+    query = Challenge.get_or_none(((Challenge.challenger == user1)
+                                  | (Challenge.challenger == user2)
+                                  | (Challenge.challenged == user1)
+                                  | (Challenge.challenged == user2))
+                                  & (Challenge.resolved is False))
     if query:
         return("Challenge already found!!")
     else:
@@ -71,7 +71,7 @@ def create_challenge(user1, user2, wager):
 def clean_challenges():
     """Expires challenges if they are active for over a minute."""
 
-    for chall in Challenge.select().where(Challenge.resolved==False):
+    for chall in Challenge.select().where(Challenge.resolved is False):
         if (arrow.now() - arrow.get(chall.date)).seconds > 120:
             print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
             chall.resolved = True
@@ -84,7 +84,7 @@ def cancel_challenge(msg):
     """Cancels a challenge that the user sent out."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
+    query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved is False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
@@ -99,7 +99,7 @@ def decline_challenge(msg):
     """Allows a challenged to decline a challenge."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved is False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
@@ -114,7 +114,7 @@ def accept_challenge(msg):
     """Handles the accept challenge sequence."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved is False))
     if query:
         if get_points(user) < query.wager:
             return([f"{user} doesn't have enough points to accept the challenge"])
@@ -128,14 +128,14 @@ def accept_challenge(msg):
 def perform_challenge(chall):
     """Executes the challenge between two users.
     This function takes in the challenge DB object.
-    Due to constraints in the chat method, the return type is a list 
+    Due to constraints in the chat method, the return type is a list
     of strings to send to chat one by one.
     """
 
     user1, user2 = get_user(chall.challenger), get_user(chall.challenged)
     ret = []
     ret.append(f'Initiating challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points.')
-    roll1, roll2 = randint(1,100), randint(1,100)
+    roll1, roll2 = randint(1, 100), randint(1, 100)
     ret.append(f'First roll: {chall.challenger} rolls a {roll1}')
     ret.append(f'Second roll: {chall.challenged} rolls a {roll2}')
     if roll1 == roll2:
@@ -236,7 +236,7 @@ def points_command(msg):
     return f'{user} has {pts} points!'
 
 
-def parse_points_command(msg) -> (str,int):
+def parse_points_command(msg) -> (str, int):
     """Parses the second portion of the meta points call.
 
     A sample example is:
@@ -273,7 +273,7 @@ def handle_point_command(msg):
 def set_points(name, pts) -> str:
     """Set point function."""
 
-    query = Points.update(points = pts).where(Points.name == name).execute()
+    query = Points.update(points=pts).where(Points.name == name).execute()
 
 
 def increment_points(name, pts, type='+') -> str:
@@ -281,15 +281,15 @@ def increment_points(name, pts, type='+') -> str:
 
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
-        query = Points.update(points = Points.points + pts, 
-                            points_won = Points.points_won + pts, 
-                            times_won = Points.times_won + 1, 
-                            modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points=Points.points + pts,
+                              points_won=Points.points_won + pts,
+                              times_won=Points.times_won + 1,
+                              modified=arrow.now().format()).where(Points.name == name)
     elif type == '-':
-        query = Points.update(points = Points.points - pts, 
-                            points_lost = Points.points_lost + pts, 
-                            times_lost = Points.times_lost + 1, 
-                            modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points=Points.points - pts,
+                              points_lost=Points.points_lost + pts,
+                              times_lost=Points.times_lost + 1,
+                              modified=arrow.now().format()).where(Points.name == name)
     query.execute()
 
 
@@ -298,9 +298,9 @@ def increment_points_without_update(name, pts, type='+') -> str:
 
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
-        query = Points.update(points = Points.points + pts, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points=Points.points + pts, modified=arrow.now().format()).where(Points.name == name)
     elif type == '-':
-        query = Points.update(points = Points.points - pts, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points=Points.points - pts, modified=arrow.now().format()).where(Points.name == name)
     query.execute()
 
 
@@ -378,7 +378,7 @@ def gamblestats(msg) -> str:
 def get_user(username) -> Points:
     """Returns a user db object from the username"""
 
-    user = Points.get_or_create(name = username)
+    user = Points.get_or_create(name=username)
     return user[0]
 
 
