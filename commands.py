@@ -5,7 +5,7 @@ from time import sleep
 from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
 
 import api
-from bot import chat
+import bot
 import cfg
 import point_db
 import command_db
@@ -53,11 +53,11 @@ chat_parser = ':' + username + irc_garb + ':' + msg
 
 
 class Message:
-    '''Represents a chat message.
+    """Represents a chat message.
 
     Has methods to parse internally for different types of 
     commands and to assign variables accordingly.
-    '''
+    """
 
     def __init__(self, text):
         self.username = self.message = self.command = self.metacommand = self.command_body = self.points_user = ''
@@ -122,11 +122,11 @@ class Message:
 
 
 def handle_command(sock, response) -> None:
-    '''Execute commands given by users.
+    """Execute commands given by users.
 
     All command handling return strings to be
     printed out to the socket.
-    '''
+    """
 
     msg = Message(response)
     if msg.username:
@@ -137,59 +137,59 @@ def handle_command(sock, response) -> None:
     if msg.command:
         static = command_db.get_command(msg.command)
         if static:
-            chat(sock, static)
+            bot.chat(sock, static)
 
         elif msg.username == 'monipooh' and 'pikachu' in msg.message:
-            chat(sock, 'Pikachu OMEGALUL')
+            bot.chat(sock, 'Pikachu OMEGALUL')
 
         elif msg.command in commands_func_list:
-            chat(sock, commands_func_list[msg.command]())
+            bot.chat(sock, commands_func_list[msg.command]())
 
         elif msg.command == 'commands':
             static_list = command_db.get_command_list()
             dynamic_list = ', '.join(['!' + x for x in sorted(list(static_list.keys()) + command_list)])
-            chat(sock, f'The commands for this channel are {dynamic_list}')
+            bot.chat(sock, f'The commands for this channel are {dynamic_list}')
 
         elif msg.command == 'points':
-            chat(sock, point_db.points_command(msg))
+            bot.chat(sock, point_db.points_command(msg))
 
         elif msg.command == 'gamble':
-            chat(sock, point_db.gamble(msg))
+            bot.chat(sock, point_db.gamble(msg))
 
         elif msg.command == 'gamblestats':
-            chat(sock, point_db.gamblestats(msg))
+            bot.chat(sock, point_db.gamblestats(msg))
 
         elif msg.command == 'challenge':
-            chat(sock, point_db.handle_challenge_command(msg))
+            bot.chat(sock, point_db.handle_challenge_command(msg))
 
         elif msg.command == 'cancel':
-            chat(sock, point_db.cancel_challenge(msg))
+            bot.chat(sock, point_db.cancel_challenge(msg))
 
         elif msg.command == 'decline':
-            chat(sock, point_db.decline_challenge(msg))
+            bot.chat(sock, point_db.decline_challenge(msg))
 
         elif msg.command == 'accept':
             for line in point_db.accept_challenge(msg):
-                chat(sock, line)
+                bot.chat(sock, line)
                 sleep(1.5)
 
         # addpoints, subpoints, setpoints
         elif msg.command in point_commands and msg.username in cfg.ADMIN:
-            chat(sock, point_db.handle_point_command(msg))
+            bot.chat(sock, point_db.handle_point_command(msg))
 
         # settitle, setgame
         elif msg.command in admin_commands and msg.username in cfg.ADMIN:
-            chat(sock, admin_commands[msg.command](msg.message))
+            bot.chat(sock, admin_commands[msg.command](msg.message))
 
         # add, edit, remove
         elif msg.command in meta_commands and msg.metacommand:
-            chat(sock, handle_meta_command(msg.command, msg.metacommand[1:], msg.message))
+            bot.chat(sock, handle_meta_command(msg.command, msg.metacommand[1:], msg.message))
 
     return
 
 
 def handle_meta_command(name, command_name='', command_text='') -> str:
-    '''Properly handles meta commands.'''
+    """Properly handles meta commands."""
 
     if name == 'remove':
         command_db.remove_command(command_name)

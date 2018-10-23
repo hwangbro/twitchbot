@@ -18,26 +18,20 @@ def get_new_token():
 
 
 def get_uptime() -> str:
-    '''Returns the uptime of the stream.'''
+    """Returns the uptime of the stream."""
 
-    url = f'https://api.twitch.tv/kraken/streams/{cfg.CHANNEL_ID}'
-    r = requests.get(url, headers=cfg.HEADERS).json()
-
-    # Sleep to avoid potential API timeouts.
-    sleep(0.5)
-
-    if r['stream'] is None:
+    if not is_live():
         return 'hwangbroXD is not live!'
 
     start_time = arrow.get(r['stream']['created_at'])
     duration = (arrow.now() - start_time).seconds
-    min, sec = divmod(duration, 60)
-    hr, min = divmod(min, 60)
+    minutes, sec = divmod(duration, 60)
+    hr, minutes = divmod(minutes, 60)
     return 'hwangbroXD has been live for %d hours, %02d minutes and %02d seconds.' % (hr, min, sec)
 
 
 def get_game() -> str:
-    '''Returns the current game category.'''
+    """Returns the current game category."""
 
     r = requests.get(cfg.URL, headers=cfg.HEADERS).json()
 
@@ -48,7 +42,7 @@ def get_game() -> str:
 
 
 def get_title() -> str:
-    '''Returns the current stream title.'''
+    """Returns the current stream title."""
 
     r = requests.get(cfg.URL, headers=cfg.HEADERS).json()
 
@@ -59,17 +53,17 @@ def get_title() -> str:
 
 
 def get_pro_mods() -> str:
-    '''Return a list of admins who can use meta bot commands.'''
+    """Return a list of admins who can use meta bot commands."""
 
     return f'The users who can use the admin bot commands are ' + ', '.join(cfg.ADMIN)
 
 
 def set_game(game: str) -> str:
-    '''Sets the game category of the stream.
+    """Sets the game category of the stream.
 
     The game title has to exactly match a category.
     Otherwise, the category won't properly update.
-    '''
+    """
 
     if game.lower() == 'none':
         data = {'channel': {'game': ''}}
@@ -85,7 +79,7 @@ def set_game(game: str) -> str:
 
 
 def set_title(title: str) -> str:
-    '''Sets the title of the stream.'''
+    """Sets the title of the stream."""
 
     if len(title) > 140:
         return f'The stream title is too long and could not be set.'
@@ -100,7 +94,7 @@ def set_title(title: str) -> str:
 
 
 def get_viewers() -> [str]:
-    '''Gets the number of viewers on the stream.'''
+    """Gets the number of viewers on the stream."""
 
     url = r'https://tmi.twitch.tv/group/user/hwangbroxd/chatters'
     names = requests.get(url).json()
@@ -109,3 +103,15 @@ def get_viewers() -> [str]:
     sleep(0.5)
 
     return names['chatters']['viewers'] + names['chatters']['moderators']
+
+
+def is_live():
+    """Returns if the stream is live."""
+
+    url = f'https://api.twitch.tv/kraken/streams/{cfg.CHANNEL_ID}'
+    r = requests.get(url, headers=cfg.HEADERS).json()
+
+    # Sleep to avoid potential API timeouts.
+    sleep(0.5)
+
+    return (r['stream'] is not None)

@@ -43,11 +43,11 @@ class Challenge(BaseModel):
 
 
 def create_challenge(user1, user2, wager):
-    '''Creates a challenge between two users
+    """Creates a challenge between two users
      Points are initially subtracted from user1 until the challenge
     is either accepted or declined. If declined or cancelled,
     user1 gets points back.
-    '''
+    """
 
     if user1 == user2:
         return("You can't challenge yourself.")
@@ -69,7 +69,7 @@ def create_challenge(user1, user2, wager):
 
 
 def clean_challenges():
-    '''Expires challenges if they are active for over a minute.'''
+    """Expires challenges if they are active for over a minute."""
 
     for chall in Challenge.select().where(Challenge.resolved==False):
         if (arrow.now() - arrow.get(chall.date)).seconds > 120:
@@ -81,7 +81,7 @@ def clean_challenges():
 
 
 def cancel_challenge(msg):
-    '''Cancels a challenge that the user sent out.'''
+    """Cancels a challenge that the user sent out."""
 
     user = msg.username
     query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
@@ -96,7 +96,7 @@ def cancel_challenge(msg):
 
 
 def decline_challenge(msg):
-    '''Allows a challenged to decline a challenge.'''
+    """Allows a challenged to decline a challenge."""
 
     user = msg.username
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
@@ -111,7 +111,7 @@ def decline_challenge(msg):
 
 
 def accept_challenge(msg):
-    '''Handles the accept challenge sequence.'''
+    """Handles the accept challenge sequence."""
 
     user = msg.username
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
@@ -126,11 +126,11 @@ def accept_challenge(msg):
 
 
 def perform_challenge(chall):
-    '''Executes the challenge between two users.
+    """Executes the challenge between two users.
     This function takes in the challenge DB object.
     Due to constraints in the chat method, the return type is a list 
     of strings to send to chat one by one.
-    '''
+    """
 
     user1, user2 = get_user(chall.challenger), get_user(chall.challenged)
     ret = []
@@ -159,7 +159,7 @@ def perform_challenge(chall):
 
 
 def update_challenge_winner(winner, loser, wager):
-    '''Updates db entries with challenge results'''
+    """Updates db entries with challenge results"""
 
     winner.challenge_points_won += wager
     loser.challenge_points_lost += wager
@@ -172,11 +172,11 @@ def update_challenge_winner(winner, loser, wager):
 
 
 def handle_challenge_command(msg):
-    '''Parses the message for proper challenge format.
+    """Parses the message for proper challenge format.
 
     This function also redirects cancel and decline commands
     to the respective functions.
-    '''
+    """
     user = msg.username
     cmd = msg.message
     wager = msg.points_amount
@@ -190,12 +190,12 @@ def handle_challenge_command(msg):
 
 
 def update_viewers(usernames: [str]):
-    '''Adds one point to the specified users.
+    """Adds one point to the specified users.
 
     Function takes in a list of users.
     If the users don't exist, add them into the database.
     After all the users are 'added', increment all the users by 1 point.
-    '''
+    """
 
     empty_users = [{'name': user} for user in usernames]
     Points.insert_many(empty_users).on_conflict(
@@ -205,7 +205,7 @@ def update_viewers(usernames: [str]):
 
 
 def get_points(username) -> int:
-    '''Gets the point value of a single user.'''
+    """Gets the point value of a single user."""
 
     user = Points.get_or_none(Points.name == username)
     if user:
@@ -214,12 +214,12 @@ def get_points(username) -> int:
 
 
 def points_command(msg):
-    '''Handles the '!points' command.
+    """Handles the '!points' command.
 
     This handler is a bit more complex, given that
     you can check others points as well.
     user2 can be empty, which means you only check user1's points.
-    '''
+    """
 
     user1 = msg.username
     user2 = msg.command_body
@@ -237,12 +237,12 @@ def points_command(msg):
 
 
 def parse_points_command(msg) -> (str,int):
-    '''Parses the second portion of the meta points call.
+    """Parses the second portion of the meta points call.
 
     A sample example is:
         '!addpoints hwangbroxd 10'
     This function parses the 'hwangbroxd 10' and gets those two values.
-    '''
+    """
 
     message = msg.split()
     try:
@@ -253,7 +253,7 @@ def parse_points_command(msg) -> (str,int):
 
 
 def handle_point_command(msg):
-    '''Overarching handler for meta point commands.'''
+    """Overarching handler for meta point commands."""
 
     name = msg.points_user
     pts = msg.points_amount
@@ -271,13 +271,13 @@ def handle_point_command(msg):
 
 
 def set_points(name, pts) -> str:
-    '''Set point function.'''
+    """Set point function."""
 
     query = Points.update(points = pts).where(Points.name == name).execute()
 
 
 def increment_points(name, pts, type='+') -> str:
-    '''This function handles both adding and subtracting.'''
+    """This function handles both adding and subtracting."""
 
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
@@ -294,7 +294,7 @@ def increment_points(name, pts, type='+') -> str:
 
 
 def increment_points_without_update(name, pts, type='+') -> str:
-    '''This function handles both adding and subtracting.'''
+    """This function handles both adding and subtracting."""
 
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
@@ -305,12 +305,12 @@ def increment_points_without_update(name, pts, type='+') -> str:
 
 
 def gamble(msg):
-    '''Simple gambling function.
+    """Simple gambling function.
 
     Users can specify 'all' as the wager as well.
     Wager must be a positive number, less than the
     current amount of points a user has.
-    '''
+    """
     username = msg.username
     wager = msg.points_amount
 
@@ -345,10 +345,10 @@ def gamble(msg):
 
 
 def gamblestats(msg) -> str:
-    ''' Returns gamble stats for users.
+    """ Returns gamble stats for users.
 
     Potentially add ability to check other users' stats.
-    '''
+    """
 
     detailed = 'detailed' in msg.command_body
     user = get_user(msg.username)
@@ -376,7 +376,7 @@ def gamblestats(msg) -> str:
 
 
 def get_user(username) -> Points:
-    '''Returns a user db object from the username'''
+    """Returns a user db object from the username"""
 
     user = Points.get_or_create(name = username)
     return user[0]

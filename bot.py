@@ -14,25 +14,25 @@ import command_db
 import chat_db
 
 def chat(sock, msg):
-    '''Sends a chat message through socket.'''
+    """Sends a chat message through socket."""
 
     sock.send(f'PRIVMSG {cfg.CHAN} :{msg}\r\n'.encode('utf-8'))
 
 
 def ban(sock, user):
-    '''Bans the specified user from chat.'''
+    """Bans the specified user from chat."""
 
     chat(sock, f'.ban {user}')
 
 
 def timeout(sock, user, secs=600):
-    '''Time out a user for set period of time.'''
+    """Time out a user for set period of time."""
 
     chat(sock, f'.timeout {user} {secs}')
 
 
 def close_dbs():
-    '''Closes the connections to the dbs.'''
+    """Closes the connections to the dbs."""
 
     command_db.db.close()
     point_db.db.close()
@@ -40,7 +40,7 @@ def close_dbs():
 
 
 class UpdatePoints(threading.Thread):
-    '''Update viewer points every minute.'''
+    """Update viewer points every minute."""
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -66,7 +66,7 @@ def main():
     pts.start()
 
     def signal_handler(signal, frame):
-        '''Shuts down the UpdateThread and closes socket.'''
+        """Shuts down the UpdateThread and closes socket."""
 
         pts.event.set()
         close_dbs()
