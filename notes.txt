@@ -51,3 +51,9 @@ for points db
 
     for converting chat command to challenge/accept
         return list of strings to iterate and chat through socket
+
+
+
+!gamblestats [playcount|points] [detailed]
+detailed gives both wins/loss
+non detailed just gives deltas.

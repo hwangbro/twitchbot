@@ -51,7 +51,11 @@ def create_challenge(user1, user2, wager):
 
     if user1 == user2:
         return("You can't challenge yourself.")
-    query = Challenge.get_or_none(((Challenge.challenger == user1) | (Challenge.challenger == user2) | (Challenge.challenged == user1) | (Challenge.challenged == user2)) & (Challenge.resolved == False))
+    query = Challenge.get_or_none(((Challenge.challenger == user1) 
+        | (Challenge.challenger == user2) 
+        | (Challenge.challenged == user1) 
+        | (Challenge.challenged == user2)) 
+        & (Challenge.resolved == False))
     if query:
         return("Challenge already found!!")
     else:
@@ -76,9 +80,10 @@ def clean_challenges():
             increment_points_without_update(chall.challenger, chall.wager, '+')
 
 
-def cancel_challenge(user):
+def cancel_challenge(msg):
     '''Cancels a challenge that the user sent out.'''
 
+    user = msg.username
     query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
@@ -90,9 +95,10 @@ def cancel_challenge(user):
         return "f{user} is not currently in a challenge."
 
 
-def decline_challenge(user):
+def decline_challenge(msg):
     '''Allows a challenged to decline a challenge.'''
 
+    user = msg.username
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
@@ -104,9 +110,10 @@ def decline_challenge(user):
         return f'{user} is not currently in a challenge.'
 
 
-def accept_challenge(user):
+def accept_challenge(msg):
     '''Handles the accept challenge sequence.'''
 
+    user = msg.username
     query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         if get_points(user) < query.wager:
@@ -274,9 +281,15 @@ def increment_points(name, pts, type='+') -> str:
 
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if type == '+':
-        query = Points.update(points = Points.points + pts, points_won = Points.points_won + pts, times_won = Points.times_won + 1, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points = Points.points + pts, 
+                            points_won = Points.points_won + pts, 
+                            times_won = Points.times_won + 1, 
+                            modified = arrow.now().format()).where(Points.name == name)
     elif type == '-':
-        query = Points.update(points = Points.points - pts, points_lost = Points.points_lost + pts, times_lost = Points.times_lost + 1, modified = arrow.now().format()).where(Points.name == name)
+        query = Points.update(points = Points.points - pts, 
+                            points_lost = Points.points_lost + pts, 
+                            times_lost = Points.times_lost + 1, 
+                            modified = arrow.now().format()).where(Points.name == name)
     query.execute()
 
 
@@ -331,45 +344,35 @@ def gamble(msg):
         return f"{username} rolled a {roll}! You've lost {wager} points, loser. You now have {points - wager} points."
 
 
-def delta_points(user) -> str:
-    '''Returns the lifetime delta for a user's gambling'''
+def gamblestats(msg) -> str:
+    ''' Returns gamble stats for users.
 
-    user_pts = get_user(user)
-    total = user_pts.points_won - user_pts.points_lost
-    res = 'profit' if total > 0 else 'deficit'
-    return f'{user} has a lifetime {res} of {total} points.'
+    Potentially add ability to check other users' stats.
+    '''
 
-
-def get_point_win_total(user) -> str:
-    '''Returns the lifetime points won'''
-
-    user = get_user(user)
-    won = user.points_won
-    return f"You have won {won} points total."
-
-
-def get_point_lost_total(user) -> str:
-    '''Returns the lifetime points lost'''
-
-    user_pts = get_user(user)
-    lost = user_pts.points_lost
-    return f'{user} has lost {lost} points total.'
-
-
-def get_gamble_win_total(user) -> str:
-    '''Returns the number of gambles won'''
-
-    user_pts = get_user(user)
-    won = user_pts.times_won
-    return f'{user} has won {won} gambling endeavors total.'
-
-
-def get_gamble_loss_total(user) -> str:
-    '''Returns the number of gambles lost'''
-
-    user_pts = get_user(user)
-    lost = user_pts.times_lost
-    return f'{user} have lost {lost} gambling endeavors total.'
+    detailed = 'detailed' in msg.command_body
+    user = get_user(msg.username)
+    ret = ''
+    if not msg.command_body:
+        return f'You can type "!gamblestats playcount" or "!gamblestats points" to see your gambling stats! Add "detailed" at the end to see a breakdown.'
+    if 'playcount' in msg.command_body:
+        playcount_delta = user.times_won - user.times_lost
+        stat1, stat2 = 'lost', 'won'
+        if playcount_delta > 0:
+            stat1, stat2 = 'won', 'lost'
+        ret += f"{msg.username} has {stat1} {abs(playcount_delta)} more than they've {stat2}!"
+        if detailed:
+            percent = (user.times_won / (user.times_won + user.times_lost)) * 100
+            ret += f" You have a {percent:.2f}% success rate, with a total of {user.times_won} times won and {user.times_lost} times lost."
+    elif 'points' in msg.command_body:
+        points_delta = user.points_won - user.points_lost
+        stat1, stat2 = 'lost', 'won'
+        if points_delta > 0:
+            stat1, stat2 = 'won', 'lost'
+        ret += f"{msg.username} has {stat1} {abs(points_delta)} points more than they've {stat2}."
+        if detailed:
+            ret += f" You've won {user.points_won} points and lost {user.points_lost} points total in your gambling addiction."
+    return ret
 
 
 def get_user(username) -> Points:

@@ -120,6 +120,7 @@ class Message:
         return f'[{self.username}]: {self.message}'
 
 
+
 def handle_command(sock, response) -> None:
     '''Execute commands given by users.
 
@@ -155,26 +156,32 @@ def handle_command(sock, response) -> None:
         elif msg.command == 'gamble':
             chat(sock, point_db.gamble(msg))
 
+        elif msg.command == 'gamblestats':
+            chat(sock, point_db.gamblestats(msg))
+
         elif msg.command == 'challenge':
             chat(sock, point_db.handle_challenge_command(msg))
 
         elif msg.command == 'cancel':
-            chat(sock, point_db.cancel_challenge(msg.username))
+            chat(sock, point_db.cancel_challenge(msg))
 
         elif msg.command == 'decline':
-            chat(sock, point_db.decline_challenge(msg.username))
+            chat(sock, point_db.decline_challenge(msg))
 
         elif msg.command == 'accept':
-            for line in point_db.accept_challenge(msg.username):
+            for line in point_db.accept_challenge(msg):
                 chat(sock, line)
                 sleep(1.5)
 
+        # addpoints, subpoints, setpoints
         elif msg.command in point_commands and msg.username in cfg.ADMIN:
             chat(sock, point_db.handle_point_command(msg))
 
+        # settitle, setgame
         elif msg.command in admin_commands and msg.username in cfg.ADMIN:
             chat(sock, admin_commands[msg.command](msg.message))
 
+        # add, edit, remove
         elif msg.command in meta_commands and msg.metacommand:
             chat(sock, handle_meta_command(msg.command, msg.metacommand[1:], msg.message))
 
