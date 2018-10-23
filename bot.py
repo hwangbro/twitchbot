@@ -59,6 +59,7 @@ def main():
     s.send(f'PASS {cfg.PASS}\r\n'.encode('utf-8'))
     s.send(f'NICK {cfg.NICK}\r\n'.encode('utf-8'))
     s.send(f'JOIN {cfg.CHAN}\r\n'.encode('utf-8'))
+    print('bot is alive')
 
     pts = UpdatePoints()
     pts.daemon = True
@@ -84,7 +85,6 @@ def main():
         if response == 'PING :tmi.twitch.tv\r\n':
             s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
         else:
-            print(response, end='')
             commands.handle_command(s, response)
 
 

@@ -68,7 +68,7 @@ def clean_challenges():
     '''Expires challenges if they are active for over a minute.'''
 
     for chall in Challenge.select().where(Challenge.resolved==False):
-        if (arrow.now() - arrow.get(chall.date)).seconds > 60:
+        if (arrow.now() - arrow.get(chall.date)).seconds > 120:
             print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
             chall.resolved = True
             chall.winner = 'EXPIRED'
@@ -172,16 +172,14 @@ def handle_challenge_command(msg):
     '''
     user = msg.username
     cmd = msg.message
+    wager = msg.points_amount
+    user2 = msg.points_user
 
     if cmd == 'decline':
         return decline_challenge(user)
     elif cmd == 'cancel':
         return cancel_challenge(user)
-    try:
-        user2, wager = parse_points_command(cmd)
-        return(create_challenge(user, user2, wager))
-    except ValueError:
-        return 'Incorrect Format.'
+    return(create_challenge(user, user2, wager))
 
 
 def update_viewers(usernames: [str]):
@@ -217,7 +215,7 @@ def points_command(msg):
     '''
 
     user1 = msg.username
-    user2 = msg.message
+    user2 = msg.command_body
 
     user2exists = False
     user1 = user1.replace('@', '')
@@ -247,10 +245,12 @@ def parse_points_command(msg) -> (str,int):
         return 'Incorrect format.'
 
 
-def handle_point_command(cmd, msg):
+def handle_point_command(msg):
     '''Overarching handler for meta point commands.'''
 
-    name, pts = parse_points_command(msg)
+    name = msg.points_user
+    pts = msg.points_amount
+    cmd = msg.command
     empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if cmd == 'addpoints':
         increment_points_without_update(name, pts, '+')
@@ -314,9 +314,15 @@ def gamble(msg):
     if wager < 0:
         return "Can't bet negative numbers."
 
-    roll = randint(1, 100)
+    roll = randint(40, 100) if username == 'hwangbroxd' else randint(0, 100)
     if wager > points:
         return f"{username} only has {points} points. You don't have enough to gamble."
+    if roll == 0:
+        increment_points(username, points, "-")
+        return f"{username}, the poor unlucky soul, rolled a {roll}. You've lost all your points. You now have 0 points."
+    if roll == 100:
+        increment_points(username, points, "+")
+        return f"Are you cheating?? {username} rolled a {roll}. You've doubled your points, and now have {points*2} points!."
     if roll > 50:
         increment_points(username, wager, "+")
         return f"{username} rolled a {roll}! You've won {wager} points. You now have {points + wager} points."

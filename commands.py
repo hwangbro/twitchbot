@@ -65,12 +65,14 @@ class Message:
 
         self.is_points_command = False
         self.is_gamble_command = False
+        self.is_challenge_command = False
+
         self.points_amount = 0
 
         self.parse_msg(text)
         self.parse_cmd(text)
 
-        if self.command in point_commands and self.username in cfg.ADMIN:
+        if (self.command in point_commands and self.username in cfg.ADMIN) or (self.command == 'challenge'):
             self.parse_points_command()
 
         elif self.command == 'gamble':
@@ -78,16 +80,21 @@ class Message:
 
     def parse_cmd(self, text):
         parsed = list(parser.scanString(text))
-        res = parsed[0][0] if parsed else ('','','','')
-        self.command = res.cmd.strip().lower()
-        self.command_body = res.msg.strip()
-        self.metacommand = res.new_cmd.strip().lower()
-        self.is_command = self.metacommand != ''
+        if parsed:
+            res = parsed[0][0]
+            self.command = res.cmd.strip().lower()
+            self.command_body = res.msg.strip()
+            self.metacommand = res.new_cmd.strip().lower()
+            self.is_command = self.metacommand != ''
+
 
     def parse_msg(self, text):
-        res = list(chat_parser.scanString(text))[0][0]
-        self.username = res.username.strip().lower()
-        self.message = res.msg.strip()
+        parsed = list(chat_parser.scanString(text))
+        if parsed:
+            res = parsed[0][0]
+            self.username = res.username.strip().lower()
+            self.message = res.msg.strip()
+            
 
     def parse_points_command(self):
         self.is_points_command = True
@@ -104,9 +111,10 @@ class Message:
         try:
             wager = self.command_body if self.command_body == 'all' else int(self.command_body)
         except ValueError:
-            print('incorrect points format for ' + str(message))
+            print('incorrect points format for ' + str(wager))
             raise
         self.points_amount = wager
+
 
     def __str__(self):
         return f'[{self.username}]: {self.message}'
@@ -118,8 +126,11 @@ def handle_command(sock, response) -> None:
     All command handling return strings to be
     printed out to the socket.
     '''
+
     msg = Message(response)
-    chat_db.add_msg(msg.username, msg.message)
+    if msg.username:
+        chat_db.add_msg(msg.username, msg.message)
+        print(msg)
 
     # If command is found
     if msg.command:
@@ -135,7 +146,8 @@ def handle_command(sock, response) -> None:
 
         elif msg.command == 'commands':
             static_list = command_db.get_command_list()
-            chat(sock, 'The commands for this channel are ' + ', '.join(['!' + x for x in sorted(list(static_list.keys()) + command_list)]))
+            dynamic_list = ', '.join(['!' + x for x in sorted(list(static_list.keys()) + command_list)])
+            chat(sock, f'The commands for this channel are {dynamic_list}')
 
         elif msg.command == 'points':
             chat(sock, point_db.points_command(msg))
@@ -144,7 +156,7 @@ def handle_command(sock, response) -> None:
             chat(sock, point_db.gamble(msg))
 
         elif msg.command == 'challenge':
-            chat(sock, point_db.handle_challenge_command(msg.username, msg.message))
+            chat(sock, point_db.handle_challenge_command(msg))
 
         elif msg.command == 'cancel':
             chat(sock, point_db.cancel_challenge(msg.username))
@@ -158,7 +170,7 @@ def handle_command(sock, response) -> None:
                 sleep(1.5)
 
         elif msg.command in point_commands and msg.username in cfg.ADMIN:
-            chat(sock, point_db.handle_point_command(msg.command, msg.message))
+            chat(sock, point_db.handle_point_command(msg))
 
         elif msg.command in admin_commands and msg.username in cfg.ADMIN:
             chat(sock, admin_commands[msg.command](msg.message))
