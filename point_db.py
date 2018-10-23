@@ -55,7 +55,7 @@ def create_challenge(user1, user2, wager):
                                   | (Challenge.challenger == user2)
                                   | (Challenge.challenged == user1)
                                   | (Challenge.challenged == user2))
-                                  & (Challenge.resolved is False))
+                                  & (Challenge.resolved == False))
     if query:
         return("Challenge already found!!")
     else:
@@ -71,7 +71,7 @@ def create_challenge(user1, user2, wager):
 def clean_challenges():
     """Expires challenges if they are active for over a minute."""
 
-    for chall in Challenge.select().where(Challenge.resolved is False):
+    for chall in Challenge.select().where(Challenge.resolved == False):
         if (arrow.now() - arrow.get(chall.date)).seconds > 120:
             print(f"the challenge between {chall.challenger} and {chall.challenged} for {chall.wager} points has expired.")
             chall.resolved = True
@@ -84,7 +84,7 @@ def cancel_challenge(msg):
     """Cancels a challenge that the user sent out."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved is False))
+    query = Challenge.get_or_none((Challenge.challenger == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
@@ -99,7 +99,7 @@ def decline_challenge(msg):
     """Allows a challenged to decline a challenge."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved is False))
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         increment_points_without_update(query.challenger, query.wager, '+')
         query.resolved = True
@@ -114,7 +114,7 @@ def accept_challenge(msg):
     """Handles the accept challenge sequence."""
 
     user = msg.username
-    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved is False))
+    query = Challenge.get_or_none((Challenge.challenged == user) & (Challenge.resolved == False))
     if query:
         if get_points(user) < query.wager:
             return([f"{user} doesn't have enough points to accept the challenge"])
