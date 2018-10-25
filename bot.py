@@ -48,7 +48,7 @@ class UpdatePoints(threading.Thread):
         self.event = threading.Event()
 
     def run(self):
-        while not self.event.wait(60):
+        while not self.event.wait(15):
             point_db.update_viewers(api.get_viewers())
             point_db.clean_challenges()
 
