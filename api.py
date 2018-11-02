@@ -24,11 +24,14 @@ def get_uptime() -> str:
     if not is_live():
         return 'hwangbroXD is not live!'
 
+    url = f'https://api.twitch.tv/kraken/streams/{cfg.CHANNEL_ID}'
+    r = requests.get(url, headers=cfg.HEADERS).json()
+
     start_time = arrow.get(r['stream']['created_at'])
     duration = (arrow.now() - start_time).seconds
     minutes, sec = divmod(duration, 60)
     hr, minutes = divmod(minutes, 60)
-    return 'hwangbroXD has been live for %d hours, %02d minutes and %02d seconds.' % (hr, min, sec)
+    return f'hwangbroXD has been live for {hr} hours, {minutes:2} minutes and {sec:2} seconds.'
 
 
 def get_game() -> str:

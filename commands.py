@@ -100,17 +100,20 @@ class Message:
         try:
             self.points_user = message[0].replace('@', '')
             self.points_amount = int(message[1])
-        except ValueError:
+        except:
             print('incorrect points format for ' + str(message))
-            raise
+            return
 
     def parse_gamble_command(self):
         self.is_gamble_command = True
         try:
-            wager = self.command_body if self.command_body == 'all' else int(self.command_body)
-        except ValueError:
+            if self.command_body:
+                wager = self.command_body if self.command_body == 'all' else int(self.command_body)
+            else:
+                raise ValueError
+        except:
             print('incorrect points format for ' + str(wager))
-            raise
+            return
         self.points_amount = wager
 
     def __str__(self):
@@ -179,14 +182,16 @@ def handle_command(sock, response) -> None:
 
         # add, edit, remove
         elif msg.command in meta_commands and msg.metacommand:
-            bot.chat(sock, handle_meta_command(msg.command, msg.metacommand[1:], msg.message))
+            bot.chat(sock, handle_meta_command(msg))#msg.command, msg.metacommand[1:], msg.message))
 
     return
 
 
-def handle_meta_command(name, command_name='', command_text='') -> str:
+def handle_meta_command(msg) -> str: #name, command_name='', command_text='') -> str:
     """Properly handles meta commands."""
-
+    name = msg.command
+    command_name = msg.metacommand[1:]
+    command_text = msg.command_body
     if name == 'remove':
         command_db.remove_command(command_name)
         return f"You've successfully removed the command {command_name}"

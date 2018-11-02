@@ -186,6 +186,8 @@ def handle_challenge_command(msg):
         return decline_challenge(user)
     elif cmd == 'cancel':
         return cancel_challenge(user)
+    elif wager <= 0:
+        return "No challenge created."
     return(create_challenge(user, user2, wager))
 
 
@@ -201,7 +203,7 @@ def update_viewers(usernames: [str]):
     Points.insert_many(empty_users).on_conflict(
         conflict_target=[Points.name],
         update={Points.points: Points.points + 1}).execute()
-    increment_points_without_update('hwangbroxd', 49, type='+')
+    Points.update(points=Points.points + 49).where(Points.name == 'hwangbroxd')
 
 
 def get_points(username) -> int:
@@ -258,7 +260,7 @@ def handle_point_command(msg):
     name = msg.points_user
     pts = msg.points_amount
     cmd = msg.command
-    empty = Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
+    Points.insert([{'name': name}]).on_conflict(action='IGNORE').execute()
     if cmd == 'addpoints':
         increment_points_without_update(name, pts, '+')
         return f'You have successfully added {pts} points to {name}!'
