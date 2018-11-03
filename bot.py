@@ -12,6 +12,7 @@ import commands
 import point_db
 import command_db
 import chat_db
+import counter_db
 
 
 def chat(sock, msg):
@@ -38,6 +39,7 @@ def close_dbs():
     command_db.db.close()
     point_db.db.close()
     chat_db.db.close()
+    counter_db.db.close()
 
 
 class UpdatePoints(threading.Thread):
@@ -81,14 +83,15 @@ def main():
     while True:
         try:
             response = s.recv(1024).decode('utf-8')
+            if response == 'PING :tmi.twitch.tv\r\n':
+                s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
+            else:
+                commands.handle_command(s, response)
         except socket.timeout:
             continue
         except Exception:
             chat(s, 'bot ded')
-        if response == 'PING :tmi.twitch.tv\r\n':
-            s.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
-        else:
-            commands.handle_command(s, response)
+            raise
 
 
 if __name__ == '__main__':

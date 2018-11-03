@@ -10,6 +10,7 @@ import cfg
 import point_db
 import command_db
 import chat_db
+import counter_db
 
 
 # To add, remove, or edit commands, the admin can type
@@ -171,6 +172,26 @@ def handle_command(sock, response) -> None:
             for line in point_db.accept_challenge(msg):
                 bot.chat(sock, line)
                 sleep(1.5)
+
+        elif msg.command in [x+'stats' for x in ['pidgey', 'nido']]:
+            bot.chat(sock, counter_db.stats(msg.command))
+
+        elif msg.command in ['nido', 'pidgey'] and msg.username in cfg.ADMIN:
+            counter_db.increment_counter(msg.command)
+            bot.chat(sock, f'Adding one success to the {msg.command} counter!')
+
+        elif msg.command in ['nidofail', 'pidgeyfail'] and msg.username in cfg.ADMIN:
+            counter_db.increment_counter(msg.command)
+            bot.chat(sock, f'Adding one failed catch to the {msg.command} counter!')
+
+        elif msg.command == 'resetstats' and msg.username in cfg.ADMIN:
+            bot.chat(sock, counter_db.reset_entries())
+
+        elif msg.command == 'hydrate':
+            bot.chat(sock, counter_db.hydrate())
+
+        elif msg.command == 'hydratestats':
+            bot.chat(sock, counter_db.hydrate_stats())
 
         # addpoints, subpoints, setpoints
         elif msg.command in point_commands and msg.username in cfg.ADMIN:

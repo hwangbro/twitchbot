@@ -21,7 +21,7 @@ class BaseModel(Model):
 
 class Points(BaseModel):
     name = CharField(unique=True)
-    points = IntegerField(default=0)
+    points = IntegerField(default=150)
     modified = DateTimeField(default=arrow.now().format())
     points_won = IntegerField(default=0)
     points_lost = IntegerField(default=0)
