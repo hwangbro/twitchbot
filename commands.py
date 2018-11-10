@@ -190,7 +190,7 @@ def handle_command(sock, response) -> None:
         elif msg.command == 'hydrate':
             bot.chat(sock, counter_db.hydrate())
 
-        elif msg.command == 'hydratestats':
+        elif msg.command in ['hydratestats', 'hydratecount']:
             bot.chat(sock, counter_db.hydrate_stats())
 
         # addpoints, subpoints, setpoints

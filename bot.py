@@ -1,5 +1,6 @@
 # Main module for the bot. Run this to start.
 
+import itertools
 import threading
 import socket
 from time import sleep, time
@@ -55,6 +56,22 @@ class UpdatePoints(threading.Thread):
             point_db.clean_challenges()
 
 
+class ChatThread(threading.Thread):
+
+    def __init__(self, socket):
+        threading.Thread.__init__(self)
+        self.socket = socket
+        self.event = threading.Event()
+        self.messages = itertools.cycle([
+            "Don't forget to SMASH that like button! Type !commands for a list of what this bot can do.",
+            "Viewers gain points just by being in chat. Type !points to check how many points you have! Though, there's not much use to them yet...",
+            "If you have any suggestions for the stream or this bot, please let me know in chat!"
+            ])
+
+    def run(self):
+        while not self.event.wait(450):
+            chat(self.socket, next(self.messages))
+
 def main():
     s = socket.socket()
     s.settimeout(0.5)
@@ -68,10 +85,15 @@ def main():
     pts.daemon = True
     pts.start()
 
+    chitter = ChatThread(s)
+    chitter.daemon = True
+    chitter.start()
+
     def signal_handler(signal, frame):
         """Shuts down the UpdateThread and closes socket."""
 
         pts.event.set()
+        chitter.event.set()
         close_dbs()
         chat(s, 'killing bot')
         s.shutdown(socket.SHUT_RDWR)
