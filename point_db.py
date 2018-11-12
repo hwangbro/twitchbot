@@ -329,7 +329,7 @@ def gamble(msg):
     if wager < 0:
         return "Can't bet negative numbers."
 
-    roll = randint(40, 100) if username == 'hwangbroxd' else randint(0, 100)
+    roll = randint(45, 100) if username == 'hwangbroxd' else randint(0, 100)
     if wager > points:
         return f"{username} only has {points} points. You don't have enough to gamble."
     if roll == 0:
@@ -337,7 +337,7 @@ def gamble(msg):
         return f"{username}, the poor unlucky soul, rolled a {roll}. You've lost all your points. You now have 0 points."
     if roll == 100:
         increment_points(username, points, "+")
-        return f"Are you cheating?? {username} rolled a {roll}. You've doubled your points, and now have {points*2} points!."
+        return f"Are you cheating?? {username} rolled a {roll}. You've doubled your points, and now have {points*2} points!"
     if roll > 50:
         increment_points(username, wager, "+")
         return f"{username} rolled a {roll}! You've won {wager} points. You now have {points + wager} points."
