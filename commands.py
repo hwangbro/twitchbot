@@ -63,6 +63,8 @@ class Message:
     def __init__(self, text):
         self.username = self.message = self.command = self.metacommand = self.command_body = self.points_user = ''
         self.is_command = False
+        self.is_admin = False
+        self.is_admin_command = False
 
         self.is_points_command = False
         self.is_gamble_command = False
@@ -87,6 +89,8 @@ class Message:
             self.command_body = res.msg.strip()
             self.metacommand = res.new_cmd.strip().lower()
             self.is_command = self.metacommand != ''
+            if self.username in cfg.ADMIN:
+                self.is_admin = True
 
     def parse_msg(self, text):
         parsed = list(chat_parser.scanString(text))
@@ -173,18 +177,21 @@ def handle_command(sock, response) -> None:
                 bot.chat(sock, line)
                 sleep(1.5)
 
+        elif msg.command == 'urmom':
+            bot.chat(sock, 'YOUR MOM ' + space_command('KappaPride BIG GAY'))
+
         elif msg.command in [x+'stats' for x in ['pidgey', 'nido']]:
             bot.chat(sock, counter_db.stats(msg.command))
 
-        elif msg.command in ['nido', 'pidgey'] and msg.username in cfg.ADMIN:
+        elif msg.command in ['nido', 'pidgey'] and msg.is_admin:
             counter_db.increment_counter(msg.command)
             bot.chat(sock, f'Adding one success to the {msg.command} counter!')
 
-        elif msg.command in ['nidofail', 'pidgeyfail'] and msg.username in cfg.ADMIN:
+        elif msg.command in ['nidofail', 'pidgeyfail'] and msg.is_admin:
             counter_db.increment_counter(msg.command)
             bot.chat(sock, f'Adding one failed catch to the {msg.command} counter!')
 
-        elif msg.command == 'resetstats' and msg.username in cfg.ADMIN:
+        elif msg.command == 'resetstats' and msg.is_admin:
             bot.chat(sock, counter_db.reset_entries())
 
         elif msg.command == 'hydrate':
@@ -194,11 +201,11 @@ def handle_command(sock, response) -> None:
             bot.chat(sock, counter_db.hydrate_stats())
 
         # addpoints, subpoints, setpoints
-        elif msg.command in point_commands and msg.username in cfg.ADMIN:
+        elif msg.command in point_commands and msg.is_admin:
             bot.chat(sock, point_db.handle_point_command(msg))
 
         # settitle, setgame
-        elif msg.command in admin_commands and msg.username in cfg.ADMIN:
+        elif msg.command in admin_commands and msg.is_admin:
             bot.chat(sock, admin_commands[msg.command](msg.message))
 
         # add, edit, remove
