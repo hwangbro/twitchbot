@@ -4,3 +4,4 @@ db
 test.py
 *.sublime-project
 *.sublime-workspace
+.pytest_cache
