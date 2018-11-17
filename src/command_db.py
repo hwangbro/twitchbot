@@ -4,7 +4,7 @@ from peewee import *
 from playhouse.shortcuts import *
 
 
-db = SqliteDatabase('db/static_commands.db', pragmas={
+db = SqliteDatabase('../db/static_commands.db', pragmas={
         'journal_mode': 'wal',
         'cache_size': -1 * 64000,
         'foreign_keys': 1,

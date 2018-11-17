@@ -16,6 +16,7 @@ def get_new_token():
     # OAuth Implicit Code Flow (on api site)
     # visit the url here for token
     auth = f'https://id.twitch.tv/oauth2/authorize?client_id={cfg.CLIENT_ID}&redirect_uri=https://twitchapps.com/tokengen/&response_type=token&scope={cfg.SCOPES}'
+    print(auth)
 
 
 def get_uptime() -> str:
@@ -74,7 +75,7 @@ def set_game(game: str) -> str:
     else:
         data = {'channel': {'game': game}}
 
-    requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
+    r = requests.put(cfg.URL, headers=cfg.HEADERS, json=data)
 
     # Sleep to avoid potential API timeouts.
     sleep(0.5)
@@ -119,3 +120,6 @@ def is_live():
     sleep(0.5)
 
     return (r['stream'] is not None)
+
+if __name__ == '__main__':
+    pass

@@ -6,7 +6,7 @@ from peewee import *
 import arrow
 
 
-db = SqliteDatabase('db/twitchpoints.db', pragmas={
+db = SqliteDatabase('../db/twitchpoints.db', pragmas={
         'journal_mode': 'wal',
         'cache_size': -1 * 64000,
         'foreign_keys': 1,
@@ -236,22 +236,6 @@ def points_command(msg):
         user2exists = True
     user = user2 if user2exists else user1
     return f'{user} has {pts} points!'
-
-
-def parse_points_command(msg) -> (str, int):
-    """Parses the second portion of the meta points call.
-
-    A sample example is:
-        '!addpoints hwangbroxd 10'
-    This function parses the 'hwangbroxd 10' and gets those two values.
-    """
-
-    message = msg.split()
-    try:
-        user, pts = message
-        return user.replace('@', ''), int(pts)
-    except ValueError:
-        return 'Incorrect format.'
 
 
 def handle_point_command(msg):

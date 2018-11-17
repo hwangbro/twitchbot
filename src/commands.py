@@ -46,7 +46,7 @@ admin_commands = {
 username = Word(alphanums+'_').setResultsName('username')
 irc_garb = Word(alphanums+'_!@.') + 'PRIVMSG' + '#hwangbroxd'
 cmd = ':!' + Word(alphas).setResultsName('cmd')
-new_cmd = Optional(Combine('!' + Word(alphanums))).setResultsName('new_cmd')
+new_cmd = Optional(Combine('!' + Word(alphanums).setResultsName('new_cmd')))
 msg = restOfLine.setResultsName('msg')
 
 parser = ':' + username + irc_garb + cmd + new_cmd + msg
@@ -64,18 +64,15 @@ class Message:
         self.username = self.message = self.command = self.metacommand = self.command_body = self.points_user = ''
         self.is_command = False
         self.is_admin = False
-        self.is_admin_command = False
-
-        self.is_points_command = False
-        self.is_gamble_command = False
-        self.is_challenge_command = False
 
         self.points_amount = 0
 
         self.parse_msg(text)
         self.parse_cmd(text)
 
-        if (self.command in point_commands and self.username in cfg.ADMIN) or (self.command == 'challenge'):
+        self.is_admin = self.username in cfg.ADMIN
+
+        if (self.command in point_commands and self.is_admin) or (self.command == 'challenge'):
             self.parse_points_command()
 
         elif self.command == 'gamble':
@@ -88,9 +85,8 @@ class Message:
             self.command = res.cmd.strip().lower()
             self.command_body = res.msg.strip()
             self.metacommand = res.new_cmd.strip().lower()
-            self.is_command = self.metacommand != ''
-            if self.username in cfg.ADMIN:
-                self.is_admin = True
+            self.is_command = self.command != ''
+            self.is_admin = self.username in cfg.ADMIN
 
     def parse_msg(self, text):
         parsed = list(chat_parser.scanString(text))
@@ -100,7 +96,6 @@ class Message:
             self.message = res.msg.strip()
 
     def parse_points_command(self):
-        self.is_points_command = True
         message = self.command_body.split()
         try:
             self.points_user = message[0].replace('@', '')
@@ -110,7 +105,6 @@ class Message:
             return
 
     def parse_gamble_command(self):
-        self.is_gamble_command = True
         try:
             if self.command_body:
                 wager = self.command_body if self.command_body == 'all' else int(self.command_body)
@@ -206,7 +200,7 @@ def handle_command(sock, response) -> None:
 
         # settitle, setgame
         elif msg.command in admin_commands and msg.is_admin:
-            bot.chat(sock, admin_commands[msg.command](msg.message))
+            bot.chat(sock, admin_commands[msg.command](msg.command_body))
 
         # add, edit, remove
         elif msg.command in meta_commands and msg.metacommand:
@@ -218,7 +212,7 @@ def handle_command(sock, response) -> None:
 def handle_meta_command(msg) -> str: #name, command_name='', command_text='') -> str:
     """Properly handles meta commands."""
     name = msg.command
-    command_name = msg.metacommand[1:]
+    command_name = msg.metacommand
     command_text = msg.command_body
     if name == 'remove':
         command_db.remove_command(command_name)

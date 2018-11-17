@@ -4,7 +4,7 @@ from peewee import *
 import arrow
 
 
-db = SqliteDatabase('db/chat_history.db', pragmas={
+db = SqliteDatabase('../db/chat_history.db', pragmas={
         'journal_mode': 'wal',
         'cache_size': -1 * 64000,
         'foreign_keys': 1,

@@ -13,7 +13,7 @@ ADMIN = ['hwangbroxd', 'unlord1', 'gay_zach']
 CLIENT_ID = 'zfr9wyvljqfa3wn7acgse9bvo3xz2b'
 secret = 'rvs7zybcbiksg969eyt34mj27nzpld'
 CHANNEL_ID = '31561772'
-TOKEN = 'o06rbxcy9zkfx67f80a354vs77nl9a'  # used for api
+TOKEN = 'cdnjlxxmdu5bupkvgj9bvvgpmw20m2'  # used for api
 URL = 'https://api.twitch.tv/kraken/channels/31561772'
 HEADERS = {'Client-ID': CLIENT_ID,
            'Accept': 'application/vnd.twitchtv.v5+json',

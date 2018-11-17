@@ -3,7 +3,7 @@
 from peewee import *
 
 
-db = SqliteDatabase('db/counter.db', pragmas={
+db = SqliteDatabase('../db/counter.db', pragmas={
     'journal_mode': 'wal',
     'cache_size': -1 * 64000,
     'foreign_keys': 1,
