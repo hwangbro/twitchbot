@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('../src'))
 
 import commands
-import cfg
+import command_db
 
 
 class TestMessage(object):
@@ -58,8 +58,14 @@ class TestMessage(object):
 		assert msg.points_user == 'gay_zach'
 
 class TestHandleCommand(object):
-	def test_no_command(self):
-		chat_msg = ":hwangbroxd!hwangbroxd@hwangbroxd.tmi.twitch.tv PRIVMSG #hwangbroxd :Hello World"
+	def test_static_command(self):
+		chat_msg = ":hwangbroxd!hwangbroxd@hwangbroxd.tmi.twitch.tv PRIVMSG #hwangbroxd :!xd"
+		static = command_db.get_command(chat_msg.command)
+		assert static == 'bttvxD'
+
+	def test_api_command(self):
+		chat_msg = ":hwangbroxd!hwangbroxd@hwangbroxd.tmi.twitch.tv PRIVMSG #hwangbroxd :!title"
+		assert chat_msg.command in commands.command_func_list
 		
 
 class TestHandleMetaCommand(object):

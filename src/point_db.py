@@ -4,6 +4,7 @@ from random import randint
 
 from peewee import *
 import arrow
+import cfg
 
 
 db = SqliteDatabase('../db/twitchpoints.db', pragmas={
@@ -200,10 +201,12 @@ def update_viewers(usernames: [str]):
     """
 
     empty_users = [{'name': user} for user in usernames]
+    if not empty_users:
+        return
     Points.insert_many(empty_users).on_conflict(
         conflict_target=[Points.name],
         update={Points.points: Points.points + 1}).execute()
-    Points.update(points=Points.points + 49).where(Points.name == 'hwangbroxd')
+    Points.update(points=Points.points + 49).where(Points.name.in_(cfg.ADMIN)).execute()
 
 
 def get_points(username) -> int:
@@ -228,7 +231,7 @@ def points_command(msg):
 
     user2exists = False
     user1 = user1.replace('@', '')
-    user2 = user2.replace('@', '')
+    user2 = user2.replace('@', '').strip().lower()
     if not user2:
         pts = get_points(user1)
     else:

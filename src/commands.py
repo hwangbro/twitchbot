@@ -98,7 +98,7 @@ class Message:
     def parse_points_command(self):
         message = self.command_body.split()
         try:
-            self.points_user = message[0].replace('@', '')
+            self.points_user = message[0].replace('@', '').strip().lower()
             self.points_amount = int(message[1])
         except:
             print('incorrect points format for ' + str(message))
