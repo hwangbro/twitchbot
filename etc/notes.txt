@@ -57,3 +57,17 @@ for points db
 !gamblestats [playcount|points] [detailed]
 detailed gives both wins/loss
 non detailed just gives deltas.
+
+
+
+#tts
+import pttsx3
+engine = pttsx3.init()
+engine.setProperty('voice', engine.getProperty('voices')[1].id)
+engine.say('hello world')
+engine.runAndWait()
+
+#spongebob
+inp = 'hello world'
+import random
+out = ''.join([char.upper() if random.random() > 0.5 else char for char in inp])
