@@ -19,6 +19,7 @@ import counter_db
 def chat(sock, msg):
     """Sends a chat message through socket."""
 
+    print(f'[BOT]: {msg}')
     sock.send(f'PRIVMSG {cfg.CHAN} :{msg}\r\n'.encode('utf-8'))
 
 

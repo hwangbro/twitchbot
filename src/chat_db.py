@@ -30,6 +30,15 @@ def add_msg(user, msg):
                     date=arrow.now().format()).execute()
 
 
+def get_recent_msg(user):
+    try:
+        chat = Chat.select().where(Chat.username == user).order_by(Chat.date.desc()).get()
+    except DoesNotExist:
+        return ''
+    else:
+        return chat.message
+
+
 def close_db():
     db.close()
 
@@ -39,5 +48,4 @@ def create_table():
 
 
 if __name__ == '__main__':
-    for chat in Chat.select().order_by(Chat.date.desc()).limit(20):
-        print(chat.date, chat.username, chat.message)
+    print(get_recent_msg('hwangbroxd'))

@@ -4,8 +4,9 @@ from random import randint
 
 from peewee import *
 import arrow
-import cfg
 
+import cfg
+import tts
 
 db = SqliteDatabase('../db/twitchpoints.db', pragmas={
         'journal_mode': 'wal',
@@ -369,6 +370,22 @@ def get_user(username) -> Points:
 
     user = Points.get_or_create(name=username)
     return user[0]
+
+
+def say(msg) -> str:
+    """Performs tts command"""
+
+    text = msg.command_body
+    cost = 10
+    price = cost*len(text)
+    if not text:
+        return (f"TTS requires points to use. The current cost is {cost} points per letter. " 
+        "Warning: users who misuse this command will be punished. Example Usage: !tts hello")
+    if get_points(msg.username) < price:
+        return f"You don't have enough points to say this. TTS costs {cost} points per letter."
+    tts.say(f"{msg.username} says: {text}")
+    increment_points_without_update(msg.username, price, '-')
+    return ''
 
 
 def create_table():

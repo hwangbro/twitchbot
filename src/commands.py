@@ -3,6 +3,7 @@
 from time import sleep
 
 from pyparsing import Word, alphas, alphanums, restOfLine, Optional, Combine
+import random
 
 import api
 import bot
@@ -186,13 +187,19 @@ def handle_command(sock, response) -> None:
             bot.chat(sock, f'Adding one failed catch to the {msg.command} counter!')
 
         elif msg.command == 'resetstats' and msg.is_admin:
-            bot.chat(sock, counter_db.reset_entries())
+            bot.chat(sock, counter_db.reset_entries(msg.command_body))
 
         elif msg.command == 'hydrate':
             bot.chat(sock, counter_db.hydrate())
 
         elif msg.command in ['hydratestats', 'hydratecount']:
             bot.chat(sock, counter_db.hydrate_stats())
+
+        elif msg.command == 'mock':
+            bot.chat(sock, ''.join([char.upper() if random.random() > 0.5 else char for char in chat_db.get_recent_msg(msg.command_body)]))
+
+        elif msg.command == 'tts':
+            bot.chat(sock, point_db.say(msg))
 
         # addpoints, subpoints, setpoints
         elif msg.command in point_commands and msg.is_admin:

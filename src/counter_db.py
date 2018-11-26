@@ -54,15 +54,16 @@ def close_db():
     db.close()
 
 
-def reset_entries():
-    source = [
-        {'name': 'nido'},
-        {'name': 'nidofail'},
-        {'name': 'pidgey'},
-        {'name': 'pidgeyfail'},
-        {'name': 'hydrate'}]
+def reset_entries(stat):
+    source = []
+    if stat in ['nido', '']:
+        source += [{'name': 'nido'}, {'name': 'nidofail'}]
+    if stat in ['pidgey', '']:
+        source += [{'name': 'pidgey'}, {'name': 'pidgeyfail'}]
+    if stat in ['hydrate', '']:
+        source += [{'name': 'hydrate'}]
     Counter.insert_many(source).on_conflict(conflict_target=[Counter.name],  update={Counter.count: 0}).execute()
-    return f'Resetting stats back to 0'
+    return f'Resetting {stat} stats back to 0'
 
 # increment_counter('nidoran')
 #drop_table()
