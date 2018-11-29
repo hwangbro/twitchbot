@@ -119,6 +119,26 @@ class Message:
     def __str__(self):
         return f'[{self.username}]: {self.message}'
 
+class Command:
+    def __init__(self):
+        self.command_dict = {}
+
+    def __contains__(self, key):
+        return key in self.command_dict
+
+    def __getitem__(self, key):
+        return self.command_dict[key] #could be functions too.
+
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        pass
+
+class StaticCommands(Command):
+    def __init__(self):
+        super().__init__()
+        self.command_dict = {}
 
 def handle_command(sock, response) -> None:
     """Execute commands given by users.

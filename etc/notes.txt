@@ -57,3 +57,25 @@ for points db
 !gamblestats [playcount|points] [detailed]
 detailed gives both wins/loss
 non detailed just gives deltas.
+
+
+idea:
+    refactor how commands work
+    create a new class object to represent a command
+        command "name"
+        command "action"
+        command "type" (static, points, etc. need to flush out)
+
+    store in database using playhouse.fields -> PickleField
+
+    or
+
+    create general command "base" class
+        create sub classes as categories
+                static, points, admin/mod
+            can use these subclasses for organization/command list
+            each class/subclass is one container for everything in that category
+                variable exs:
+                    self.command_names
+                    self.command_map (maps name to function)
+                have different help commands for each category
