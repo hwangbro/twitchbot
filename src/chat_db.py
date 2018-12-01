@@ -31,6 +31,7 @@ def add_msg(user, msg):
 
 
 def get_recent_msg(user):
+    user = user.lower()
     try:
         chat = Chat.select().where(Chat.username == user).order_by(Chat.date.desc()).get()
     except DoesNotExist:

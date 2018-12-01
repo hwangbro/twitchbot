@@ -70,7 +70,7 @@ class ChatThread(threading.Thread):
             ])
 
     def run(self):
-        while not self.event.wait(1200):
+        while not self.event.wait(1800):
             chat(self.socket, next(self.messages))
 
 def main():

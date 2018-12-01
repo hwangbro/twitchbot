@@ -201,7 +201,7 @@ def update_viewers(usernames: [str]):
     After all the users are 'added', increment all the users by 1 point.
     """
 
-    empty_users = [{'name': user} for user in usernames]
+    empty_users = [{'name': user} for user in usernames if user not in cfg.BOTS]
     if not empty_users:
         return
     Points.insert_many(empty_users).on_conflict(

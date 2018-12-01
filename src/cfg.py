@@ -18,3 +18,4 @@ HEADERS = {'Client-ID': CLIENT_ID,
            'Accept': 'application/vnd.twitchtv.v5+json',
            'Authorization': f'OAuth {TOKEN}'}
 SCOPES = 'channel_editor+channel_read'
+BOTS = ['Electricalskateboard', 'skinnyseahorse', 'p0sitivitybot', 'commanderroot', 'apricotdrupefruit', 'electricallongboard']

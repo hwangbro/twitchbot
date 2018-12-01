@@ -40,6 +40,10 @@ def stats(poke):
     fail = Counter.get(Counter.name == f'{pokemon}fail')
     return f'We caught {pokemon} {catch.count}/{catch.count+fail.count} times today.'
 
+def eevee_stats():
+    won = Counter.get(Counter.name == 'eevee')
+    fail = Counter.get(Counter.name == 'eeveefail')
+    return f'We got past eevee {won.count}/{fail.count+won.count} times today.'
 
 def drop_table():
     with db:
@@ -60,6 +64,8 @@ def reset_entries(stat):
         source += [{'name': 'nido'}, {'name': 'nidofail'}]
     if stat in ['pidgey', '']:
         source += [{'name': 'pidgey'}, {'name': 'pidgeyfail'}]
+    if stat in ['eevee', '']:
+        source += [{'name': 'eevee'}, {'name': 'eeveefail'}]
     if stat in ['hydrate', '']:
         source += [{'name': 'hydrate'}]
     Counter.insert_many(source).on_conflict(conflict_target=[Counter.name],  update={Counter.count: 0}).execute()

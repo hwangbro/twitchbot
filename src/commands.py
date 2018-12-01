@@ -178,11 +178,14 @@ def handle_command(sock, response) -> None:
         elif msg.command in [x+'stats' for x in ['pidgey', 'nido']]:
             bot.chat(sock, counter_db.stats(msg.command))
 
-        elif msg.command in ['nido', 'pidgey'] and msg.is_admin:
+        elif msg.command == 'eeveestats':
+            bot.chat(sock, counter_db.eevee_stats())
+
+        elif msg.command in ['nido', 'pidgey', 'eevee'] and msg.is_admin:
             counter_db.increment_counter(msg.command)
             bot.chat(sock, f'Adding one success to the {msg.command} counter!')
 
-        elif msg.command in ['nidofail', 'pidgeyfail'] and msg.is_admin:
+        elif msg.command in ['nidofail', 'pidgeyfail', 'eeveefail'] and msg.is_admin:
             counter_db.increment_counter(msg.command)
             bot.chat(sock, f'Adding one failed catch to the {msg.command} counter!')
 
