@@ -112,7 +112,7 @@ class Message:
             else:
                 raise ValueError
         except:
-            print('incorrect points format for ' + str(wager))
+            print('incorrect points format')
             return
         self.points_amount = wager
 
