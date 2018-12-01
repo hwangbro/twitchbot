@@ -33,7 +33,7 @@ def add_msg(user, msg):
 def get_recent_msg(user):
     user = user.lower()
     try:
-        chat = Chat.select().where(Chat.username == user, ~(Chat.message.contains('mock'))).order_by(Chat.date.desc()).get()
+        chat = Chat.select().where(Chat.username == user, ~(Chat.message.contains('!mock'))).order_by(Chat.date.desc()).get()
     except DoesNotExist:
         return ''
     else:
