@@ -129,16 +129,13 @@ class Command:
     def __getitem__(self, key):
         return self.command_dict[key] #could be functions too.
 
-    def __repr__(self):
-        pass
-
     def __str__(self):
         pass
 
 class StaticCommands(Command):
     def __init__(self):
         super().__init__()
-        self.command_dict = {}
+        self.command_dict = command_db.get_command_list()
 
 def handle_command(sock, response) -> None:
     """Execute commands given by users.
